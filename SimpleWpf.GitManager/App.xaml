@@ -3,6 +3,6 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:SimpleWpf.GitManager">
     <Application.Resources>
-         
+        <ResourceDictionary Source="/Resources/MainTheme.xaml" />
     </Application.Resources>
 </Application>

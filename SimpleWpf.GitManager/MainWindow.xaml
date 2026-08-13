@@ -4,112 +4,56 @@
         xmlns:fa5="clr-namespace:FontAwesome5;assembly=FontAwesome5.Net"
         Title="Simple Git Manager" Height="450" Width="800" Icon="/Resources/Images/git.bmp">
 
-    <Window.Resources>
-
-        <!-- Theme Brushes -->
-        <SolidColorBrush x:Key="LabelForeground">Gray</SolidColorBrush>
-        <SolidColorBrush x:Key="LabelForegroundDetail">#FFCCCCCC</SolidColorBrush>
-        <SolidColorBrush x:Key="LabelForegroundSuccess">Gray</SolidColorBrush>
-        <SolidColorBrush x:Key="LabelForegroundWarning">Gray</SolidColorBrush>
-        <SolidColorBrush x:Key="LabelForegroundError">Gray</SolidColorBrush>
-
-        <SolidColorBrush x:Key="LabelForegroundInvert">White</SolidColorBrush>
-
-        <SolidColorBrush x:Key="LabelBackgroundSuccess">#5F88FF00</SolidColorBrush>
-        <SolidColorBrush x:Key="LabelBackgroundWarning">#5FFFFF00</SolidColorBrush>
-        <SolidColorBrush x:Key="LabelBackgroundError">#5FFF0000</SolidColorBrush>
-
-        <SolidColorBrush x:Key="UserControlButtonForeground">#FF555555</SolidColorBrush>
-        <SolidColorBrush x:Key="UserControlButtonBackground">White</SolidColorBrush>
-        <SolidColorBrush x:Key="UserControlButtonBackgroundHover">#8F33AAFF</SolidColorBrush>
-        <SolidColorBrush x:Key="UserControlButtonBackgroundPressed">#AF33AAFF</SolidColorBrush>
-        <SolidColorBrush x:Key="UserControlButtonBorder">#FF888888</SolidColorBrush>
-
-        <!-- Font Awesome Icon Styles -->
-        <Style TargetType="{x:Type fa5:SvgAwesome}" x:Key="FontAwesomeIconDefault">
-            <Setter Property="Width" Value="16" />
-            <Setter Property="Height" Value="16" />
-            <Setter Property="Foreground" Value="Gray" />
-        </Style>
-
-        <!-- Text Block Styles-->
-        <Style TargetType="TextBlock" x:Key="LabelTextBlock">
-            <Setter Property="Foreground" Value="{StaticResource LabelForeground}" />
-            <Setter Property="FontSize" Value="14" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-        </Style>
-        
-        <!-- Text Box Styles -->
-        <Style TargetType="TextBox" x:Key="UserInputTextBox">
-            <Setter Property="FontSize" Value="14" />
-            <Setter Property="Foreground" Value="#FF555555" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="Padding" Value="3" />
-        </Style>
-
-        <!-- Button Styles -->
-        <Style x:Key="UserControlButton" TargetType="Button">
-            <Setter Property="Padding" Value="2" />
-            <Setter Property="Foreground" Value="{StaticResource UserControlButtonForeground}" />
-            <Setter Property="Background" Value="{StaticResource UserControlButtonBackground}" />
-            <Setter Property="BorderBrush" Value="{StaticResource UserControlButtonBorder}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border VerticalAlignment="{TemplateBinding VerticalAlignment}"
-                                HorizontalAlignment="{TemplateBinding HorizontalAlignment}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                Background="{TemplateBinding Background}"
-                                CornerRadius="5">
-                            <Grid>
-                                <ContentPresenter VerticalAlignment="Center"
-                                              HorizontalAlignment="Center"
-                                              Margin="{TemplateBinding Padding}"/>
-                            </Grid>
-                        </Border>
-
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="{StaticResource UserControlButtonBackgroundHover}" />
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Background" Value="{StaticResource UserControlButtonBackgroundPressed}" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-    </Window.Resources>
-    
-    <Grid RowDefinitions="Auto, *">
+    <Grid RowDefinitions="Auto, *, Auto">
 
         <Border HorizontalAlignment="Stretch" Padding="5" BorderBrush="LightGray" BorderThickness="1" CornerRadius="5" Margin="5">
-            <Grid ColumnDefinitions="Auto, *, Auto" HorizontalAlignment="Stretch">
+            <Grid ColumnDefinitions="Auto, *, Auto" RowDefinitions="Auto, Auto, Auto" HorizontalAlignment="Stretch">
+                
                 <TextBlock Style="{StaticResource LabelTextBlock}" Text="Directory" Margin="3" />
+                <TextBlock Style="{StaticResource LabelTextBlock}" Grid.Row="1" Text="Git User (remote)" Margin="3" />
+                <TextBlock Style="{StaticResource LabelTextBlock}" Grid.Row="2" Text="Git Password (remote)" Margin="3" />
                 
                 <TextBox Grid.Column="1" 
                          IsReadOnly="True"
                          Style="{StaticResource UserInputTextBox}" 
                          Text="{Binding Directory, UpdateSourceTrigger=PropertyChanged}" Margin="3" />
 
-                <Button x:Name="OpenDirectoryButton" Grid.Column="2" Margin="3" Width="24" Height="24" 
+                <TextBox Grid.Column="1"
+                         Grid.Row="1"
+                         Style="{StaticResource UserInputTextBox}" 
+                         Text="{Binding User, UpdateSourceTrigger=PropertyChanged}" Margin="3" />
+
+                <PasswordBox x:Name="PasswordTB"
+                             PasswordChanged="PasswordTB_PasswordChanged"
+                             Grid.Column="1" 
+                             Grid.Row="2"
+                             Style="{StaticResource UserInputPasswordBox}" 
+                             Margin="3" />
+
+                <Button x:Name="OpenDirectoryButton" 
+                        Grid.Column="2" 
+                        Margin="3" 
+                        Width="24" 
+                        Height="24" 
                         Style="{StaticResource UserControlButton}" 
                         Click="OpenDirectoryButton_Click">
                     <fa5:SvgAwesome Icon="Regular_FolderOpen" Style="{StaticResource FontAwesomeIconDefault}" />
                 </Button>
+                
             </Grid>
         </Border>
 
-        <GroupBox Header="Repositories" 
-                  Grid.Row="1" 
+        <GroupBox Grid.Row="1" 
                   Foreground="DimGray" 
                   FontSize="14" Margin="5" 
                   BorderBrush="LightGray">
+            <GroupBox.Header>
+                <TextBlock Style="{StaticResource LabelTextBlock}">
+                    <Run Text="Git Repos (" />
+                    <Run Text="{Binding Repositories.Count, Mode=OneWay}" />
+                    <Run Text=")" />
+                </TextBlock>
+            </GroupBox.Header>
 
             <Grid RowDefinitions="Auto, *">
 
@@ -122,53 +66,95 @@
                         <Button x:Name="AddRepositoryButton" Grid.Column="2" Margin="3" Width="24" Height="24" 
                                 Style="{StaticResource UserControlButton}" 
                                 ToolTip="Add Repository"
-                                Click="OpenDirectoryButton_Click">
+                                Click="AddRepositoryButton_Click">
                             <fa5:SvgAwesome Icon="Brands_Git" Style="{StaticResource FontAwesomeIconDefault}" />
                         </Button>
 
                         <Button x:Name="UpdateRepositoryButton" Grid.Column="2" Margin="3" Width="24" Height="24" 
                                 Style="{StaticResource UserControlButton}" 
                                 ToolTip="Update Repository"
-                                Click="OpenDirectoryButton_Click">
+                                Click="UpdateRepositoryButton_Click">
                             <fa5:SvgAwesome Icon="Solid_Download" Style="{StaticResource FontAwesomeIconDefault}" />
                         </Button>
 
-                        <Button x:Name="CleanRepositoryButton" Grid.Column="2" Margin="3" Width="24" Height="24" 
+                        <Button x:Name="RunScriptButton" Grid.Column="2" Margin="3" Width="24" Height="24" 
                                 Style="{StaticResource UserControlButton}" 
-                                ToolTip="Clean Repository"
-                                Click="OpenDirectoryButton_Click">
+                                ToolTip="Run Script"
+                                Click="RunScriptButton_Click">
                             <fa5:SvgAwesome Icon="Solid_Terminal" Style="{StaticResource FontAwesomeIconDefault}" />
                         </Button>
 
                     </StackPanel>
                 </Border>
-                
-                <ListBox HorizontalAlignment="Stretch" Padding="5" BorderBrush="LightGray" BorderThickness="1" Margin="5">
 
-                    <ListBox.Template>
-                        <ControlTemplate TargetType="ListBox">
-                            <Border>
-                                <ItemsPresenter />
-                            </Border>
-                        </ControlTemplate>
-                    </ListBox.Template>
+                <ScrollViewer Grid.Row="1" Padding="5" Margin="0 5 0 0" VerticalScrollBarVisibility="Auto">
+                    <ListBox ItemsSource="{Binding Repositories}"
+                             AlternationCount="2"
+                             HorizontalAlignment="Stretch" 
+                             HorizontalContentAlignment="Stretch"
+                             BorderBrush="LightGray" 
+                             BorderThickness="1">
 
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <Border>
-                                <Grid>
-                                    <TextBlock Text="Repository" />
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
+                        <ListBox.Template>
+                            <ControlTemplate TargetType="ListBox">
+                                <Border>
+                                    <ItemsPresenter />
+                                </Border>
+                            </ControlTemplate>
+                        </ListBox.Template>
+
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="BorderBrush" Value="Transparent" />
+                                <Setter Property="BorderThickness" Value="0" />
+                                <Setter Property="Background" Value="Transparent" />
+
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="{StaticResource RepoListBoxItemHoverBackground}" />
+                                    </Trigger>
+                                    
+                                    <!-- Alternation Background (count must be set to 2 on the ListBox) -->
+                                    <Trigger Property="ItemsControl.AlternationIndex" Value="0">
+                                        <Setter Property="Background" Value="{StaticResource RepoListBoxItemBackground1}" />
+                                    </Trigger>
+                                    <Trigger Property="ItemsControl.AlternationIndex" Value="1">
+                                        <Setter Property="Background" Value="{StaticResource RepoListBoxItemBackground2}" />
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                        
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border HorizontalAlignment="Stretch">
+                                    <Grid ColumnDefinitions="Auto, *" RowDefinitions="Auto, Auto, Auto, Auto, Auto, *" HorizontalAlignment="Stretch">
+                                        <TextBlock Text="Git Name" Style="{StaticResource RepoListBoxItemLabelTextBlock}" />
+                                        <TextBlock Text="Local Path" Grid.Row="1" Style="{StaticResource RepoListBoxItemLabelTextBlock}" />
+                                        <TextBlock Text="Last Access (remote)" Grid.Row="2" Style="{StaticResource RepoListBoxItemLabelTextBlock}" />
+                                        <TextBlock Text="Last Access (local)" Grid.Row="3" Style="{StaticResource RepoListBoxItemLabelTextBlock}" />
+                                        <TextBlock Text="Last Commit" Grid.Row="4" Style="{StaticResource RepoListBoxItemLabelTextBlock}" />
+
+                                        <TextBlock Text="{Binding Name}" Grid.Column="1" Style="{StaticResource RepoListBoxItemTextBlock}" />
+                                        <TextBlock Text="{Binding BaseDirectory}" Grid.Column="1" Grid.Row="1" Style="{StaticResource RepoListBoxItemTextBlock}" />
+                                        <TextBlock Text="{Binding LastAccessRemote}" Grid.Column="1" Grid.Row="2" Style="{StaticResource RepoListBoxItemTextBlock}" />
+                                        <TextBlock Text="{Binding LastAccessLocal}" Grid.Column="1" Grid.Row="3" Style="{StaticResource RepoListBoxItemTextBlock}" />
+                                        <TextBlock Text="{Binding LastCommit}" Grid.Column="1" Grid.Row="4" Style="{StaticResource RepoListBoxItemTextBlock}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
 
 
-                </ListBox>
-                
+                    </ListBox>
+                </ScrollViewer>
             </Grid>
-            
         </GroupBox>
+
+        <StatusBar Grid.Row="2" HorizontalAlignment="Stretch">
+            <TextBlock x:Name="StatusTB" Style="{StaticResource LabelTextBlock}" HorizontalAlignment="Left" />
+        </StatusBar>
+
     </Grid>
     
 </Window>

@@ -21,6 +21,11 @@ namespace SimpleWpf.GitManager.Component
             try
             {
                 var logPath = Path.Combine(LOG_DIRECTORY, repositoryName, ".txt");
+
+                // New Log
+                if (!File.Exists(logPath))
+                    return new GitManagerLog();
+
                 var logFile = File.ReadAllText(logPath);
 
                 var logs = logFile.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);

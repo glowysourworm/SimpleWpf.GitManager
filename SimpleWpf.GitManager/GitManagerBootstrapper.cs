@@ -43,22 +43,23 @@ namespace SimpleWpf.GitManager
         /// <summary>
         /// Initialization of the configuration must occur before other components are initialized.
         /// </summary>
-        private void InitializeConfiguration()
+        private async void InitializeConfiguration()
         {
             // We can inject our initialize procedure(s) here
             //
             var controller = IocContainer.Get<IGitController>();
 
             // Get config file from the command line (or default to config folder as current executable directory)
-            var configurationFile = Environment.GetCommandLineArgs().Length > 1 ? Environment.GetCommandLineArgs()[1] : string.Empty;
+            var configurationFile = Environment.GetCommandLineArgs().Length > 1 ? Environment.GetCommandLineArgs()[1] : DEFAULT_CONFIGURATION;
 
             // Read / Create Configuration
-            Exception exception = null;
-            controller.Initialize(configurationFile, DEFAULT_CONFIGURATION, out exception);
-
-            if (exception != null)
+            try
             {
-                MessageBox.Show("Configuration Error (default GitManager.json)", exception.Message);
+                await controller.Initialize(configurationFile, DEFAULT_CONFIGURATION);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Configuration Error (default GitManager.json)", ex.Message);
             }
         }
 

@@ -5,13 +5,15 @@ namespace SimpleWpf.GitManager.Interface
     public interface IGitController : IDisposable
     {
         GitManagerConfiguration GetConfiguration();
+        string GetConfigurationFile();
+        string GetConfigurationFullPath();
 
-        bool Initialize(string configurationFile, string defaultConfigurationFile, out Exception exception);
+        Task Initialize(string configurationFile, string defaultConfigurationFile);
 
         /// <summary>
         /// Saves configuration data and disposes internal components. Must be called before
         /// disposing of component.
         /// </summary>
-        bool Shutdown(out Exception exception);
+        void Shutdown();
     }
 }

@@ -9,12 +9,11 @@ namespace SimpleWpf.GitManager.ViewModel
         string _baseDirectory;
         string _gitUrl;
         string _name;
-        string _user;
-        string _password;
+        string _lastCommit;
         bool _isFork;
         uint _size;
-        DateTime _lastAccessLocal;
-        DateTime _lastAccessRemote;
+        DateTimeOffset _lastAccessLocal;
+        DateTimeOffset _lastAccessRemote;
 
         public string Name
         {
@@ -31,15 +30,10 @@ namespace SimpleWpf.GitManager.ViewModel
             get { return _gitUrl; }
             set { this.RaiseAndSetIfChanged(ref _gitUrl, value); }
         }
-        public string User
+        public string LastCommit
         {
-            get { return _user; }
-            set { this.RaiseAndSetIfChanged(ref _user, value); }
-        }
-        public string Password
-        {
-            get { return _password; }
-            set { this.RaiseAndSetIfChanged(ref _password, value); }
+            get { return _lastCommit; }
+            set { this.RaiseAndSetIfChanged(ref _lastCommit, value); }
         }
         public bool IsFork
         {
@@ -51,12 +45,12 @@ namespace SimpleWpf.GitManager.ViewModel
             get { return _size; }
             set { this.RaiseAndSetIfChanged(ref _size, value); }
         }
-        public DateTime LastAccessLocal
+        public DateTimeOffset LastAccessLocal
         {
             get { return _lastAccessLocal; }
             set { this.RaiseAndSetIfChanged(ref _lastAccessLocal, value); }
         }
-        public DateTime LastAccessRemote
+        public DateTimeOffset LastAccessRemote
         {
             get { return _lastAccessRemote; }
             set { this.RaiseAndSetIfChanged(ref _lastAccessRemote, value); }
@@ -69,12 +63,10 @@ namespace SimpleWpf.GitManager.ViewModel
             this.BaseDirectory = string.Empty;
             this.GitUrl = string.Empty;
             this.Name = string.Empty;
-            this.User = string.Empty;
-            this.Password = string.Empty;
             this.IsFork = false;
             this.Size = 0;
-            this.LastAccessLocal = DateTime.MinValue;
-            this.LastAccessRemote = DateTime.MinValue;
+            this.LastAccessLocal = DateTimeOffset.MinValue;
+            this.LastAccessRemote = DateTimeOffset.MinValue;
 
             this.Log = new ObservableCollection<string>();
         }
