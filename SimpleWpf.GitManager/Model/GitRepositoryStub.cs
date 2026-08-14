@@ -1,6 +1,6 @@
 ﻿namespace SimpleWpf.GitManager.Model
 {
-    public class GitRepository
+    public class GitRepositoryStub
     {
         public string Name { get; set; }
         public string BaseDirectory { get; set; }
@@ -12,7 +12,7 @@
         public bool IsHeadUpToDate { get; set; }
         public uint Size { get; set; }
 
-        public GitRepository()
+        public GitRepositoryStub()
         {
             this.BaseDirectory = string.Empty;
             this.GitUrl = string.Empty;

@@ -1,9 +1,8 @@
 ﻿using System.ComponentModel;
-using System.IO;
 using System.Windows;
+using System.Windows.Threading;
 
-using Microsoft.Win32;
-
+using SimpleWpf.Extensions.Collection;
 using SimpleWpf.GitManager.Event;
 using SimpleWpf.GitManager.Interface;
 using SimpleWpf.GitManager.Model;
@@ -42,65 +41,177 @@ namespace SimpleWpf.GitManager
         {
             _eventAggregator = eventAggregator;
             _controller = controller;
-            _logManager = logManager;
             _dialogController = dialogController;
+            _logManager = logManager;
             _viewModel = new GitManagerViewModel();
+
+            // Tabs
+            _viewModel.Tabs.Add(new TabViewModel()
+            {
+                Header = "Configuration",
+                TabDataContext = _viewModel,
+                Type = TabType.Configuration
+            });
 
             InitializeComponent();
 
             // Configuration (Loaded)
-            eventAggregator.GetEvent<ConfigurationLoadedEvent>().Subscribe(configuration =>
+            eventAggregator.GetEvent<ConfigurationEvent>().Subscribe(configuration =>
             {
-                BasicHelpers.BeginInvokeDispatcher(UpdateConfiguration, System.Windows.Threading.DispatcherPriority.Background, configuration);
+                BasicHelpers.BeginInvokeDispatcher(OnConfigurationChanged, DispatcherPriority.Background, configuration);
+            });
+
+            eventAggregator.GetEvent<LogEvent>().Subscribe(log =>
+            {
+                BasicHelpers.BeginInvokeDispatcher(OnLog, DispatcherPriority.Background, log);
+            });
+
+            eventAggregator.GetEvent<ViewEvent>().Subscribe(data =>
+            {
+                BasicHelpers.BeginInvokeDispatcher(OnViewEvent, DispatcherPriority.Background, data);
+            });
+
+            eventAggregator.GetEvent<RepositoryEvent>().Subscribe(type =>
+            {
+                BasicHelpers.BeginInvokeDispatcher(OnRepositoryEvent, DispatcherPriority.Background, type);
             });
 
             this.DataContext = _viewModel;
         }
 
-        private void UpdateConfiguration(GitManagerConfiguration configuration)
+        private void OnConfigurationChanged(ConfigurationEventType eventType)
         {
-            _viewModel.Directory = configuration.Directory;
-            _viewModel.User = configuration.User;
-            _viewModel.Password = configuration.Password;
-            _viewModel.Repositories.Clear();
-
-            this.PasswordTB.Password = configuration.Password;
-
-            foreach (var repository in configuration.Repositories)
+            switch (eventType)
             {
-                // Repository
-                var repositoryViewModel = new GitManagerRepositoryViewModel()
-                {
-                    Name = repository.Name,
-                    BaseDirectory = repository.BaseDirectory,
-                    GitUrl = repository.GitUrl,
-                    LastCommitLocal = repository.LastCommitLocal,
-                    LastCommitRemote = repository.LastCommitRemote,
-                    LastFetch = repository.LastFetch,
-                    IsFork = repository.IsFork,
-                    Size = repository.Size,
-                };
-
-                // Log
-                var repositoryLog = _logManager.GetLog(repository.Name);
-
-                foreach (var message in repositoryLog.Messages)
-                {
-                    repositoryViewModel.Log.Add(message);
-                }
-
-                _viewModel.Repositories.Add(repositoryViewModel);
+                case ConfigurationEventType.Loaded:
+                    FromConfiguration();
+                    break;
+                case ConfigurationEventType.Saved:
+                    return;
+                case ConfigurationEventType.Modified:
+                    FromConfiguration();
+                    break;
+                default:
+                    throw new Exception("Unhandled configuration event type");
             }
+        }
 
-            _eventAggregator.GetEvent<StatusEvent>().Subscribe(message => this.StatusTB.Text = message);
+        private void OnLog(LogEventData eventData)
+        {
+            var repository = _viewModel.Repositories.FirstOrDefault(x => x.Name == eventData.RepositoryName);
+
+            if (repository != null)
+            {
+                repository.Log.Add(new GitManagerLogMessageViewModel()
+                {
+                    Timestamp = eventData.Data.Timestamp,
+                    Message = eventData.Data.Message,
+                });
+            }
+        }
+
+        private async void OnViewEvent(ViewEventData eventData)
+        {
+            switch (eventData.Type)
+            {
+                case ViewEventType.ConfigurationModified:
+                    break;
+                case ViewEventType.ConfigurationModifiedReload:
+                {
+                    // Clear Repositories
+                    _viewModel.Repositories.Clear();
+
+                    // Remove Repository Tabs
+                    _viewModel.Tabs.Remove(x => x.Type == TabType.Repository);
+
+                    await _controller.SetConfiguration(configuration =>
+                    {
+                        configuration.Directory = _viewModel.Directory;
+                    });
+
+                    // Re-initialize
+                    await _controller.RemoveAllReposFromConfiguration();
+                    await _controller.ReloadAllReposFromConfiguration();
+                }
+                break;
+                default:
+                    throw new Exception("Unhandled view event type");
+            }
+        }
+
+        private void OnRepositoryEvent(RepositoryEventType type)
+        {
+            switch (type)
+            {
+                case RepositoryEventType.Add:
+                    // Clear
+                    _viewModel.Repositories.Clear();
+
+                    // Reload
+                    FromConfiguration();
+                    break;
+                case RepositoryEventType.Load:
+                    break;
+                case RepositoryEventType.Remove:
+                    break;
+                case RepositoryEventType.RemoveAll:
+                    break;
+                case RepositoryEventType.Fetch:
+                    break;
+                default:
+                    throw new Exception("Unhandled Repository Event Type");
+            }
+        }
+
+        private void FromConfiguration()
+        {
+            _controller.GetConfiguration(configuration =>
+            {
+                _viewModel.Directory = configuration.Directory;
+                _viewModel.User = configuration.User;
+                _viewModel.Password = configuration.Password;
+                _viewModel.Repositories.Clear();
+
+                //this.PasswordTB.Password = configuration.Password;
+
+                foreach (var repository in configuration.Repositories)
+                {
+                    // Repository
+                    var repositoryViewModel = new GitManagerRepositoryViewModel()
+                    {
+                        Name = repository.Name,
+                        BaseDirectory = repository.BaseDirectory,
+                        GitUrl = repository.GitUrl,
+                        LastCommitLocal = repository.LastCommitLocal,
+                        LastCommitRemote = repository.LastCommitRemote,
+                        LastFetch = repository.LastFetch,
+                        IsFork = repository.IsFork,
+                        Size = repository.Size,
+                    };
+
+                    // Log
+                    var repositoryLog = _logManager.Get(repository.Name);
+
+                    foreach (var message in repositoryLog.Messages)
+                    {
+                        repositoryViewModel.Log.Add(new GitManagerLogMessageViewModel()
+                        {
+                            Timestamp = message.Timestamp,
+                            Message = message.Message,
+                        });
+                    }
+
+                    _viewModel.Repositories.Add(repositoryViewModel);
+                }
+            });
 
             // Event already sent from initialization
             this.StatusTB.Text = "Configuration Loaded:  " + _controller.GetConfigurationFile();
         }
 
-        private void SetConfiguration()
+        private async void ToConfiguration()
         {
-            _controller.SetConfiguration(configuration =>
+            await _controller.SetConfiguration(configuration =>
             {
                 configuration.Directory = _viewModel.Directory;
                 configuration.User = _viewModel.User;
@@ -112,7 +223,7 @@ namespace SimpleWpf.GitManager
 
                     if (repo == null)
                     {
-                        repo = new GitRepository();
+                        repo = new GitRepositoryStub();
 
                         configuration.Repositories.Add(repo);
                     }
@@ -137,9 +248,9 @@ namespace SimpleWpf.GitManager
             // TODO:  Create Bootstrapper Logic
             try
             {
-                SetConfiguration();
+                ToConfiguration();
 
-                _controller.Shutdown();
+                _controller.Dispose();
             }
             catch (Exception ex)
             {
@@ -154,45 +265,25 @@ namespace SimpleWpf.GitManager
             }
         }
 
-        private async void OpenDirectoryButton_Click(object sender, RoutedEventArgs e)
-        {
-            var dialog = new OpenFolderDialog();
-
-            if (dialog.ShowDialog() == true)
-            {
-                _viewModel.Directory = dialog.FolderName;
-                _viewModel.Repositories.Clear();
-
-                _controller.SetConfiguration(configuration =>
-                {
-                    configuration.Directory = _viewModel.Directory;
-                });
-
-                // Re-initialize
-                await _controller.RemoveAllReposFromConfiguration();
-                await _controller.ReloadAllReposFromConfiguration();
-            }
-        }
-
         private void AddRepositoryButton_Click(object sender, RoutedEventArgs e)
         {
-            var newRepository = new GitManagerRepositoryViewModel();
+            //var newRepository = new GitManagerRepositoryViewModel();
 
-            _dialogController.ShowDialogWindowSync(new DialogEventData(newRepository));
+            //_dialogController.ShowDialogWindowSync(new DialogEventData(newRepository));
         }
 
         private async void FetchRepositoryButton_Click(object sender, RoutedEventArgs e)
         {
-            var selectedItems = this.RepoLB.SelectedItems.Cast<GitManagerRepositoryViewModel>().ToList();
+            //var selectedItems = this.RepoLB.SelectedItems.Cast<GitManagerRepositoryViewModel>().ToList();
 
-            foreach (GitManagerRepositoryViewModel repository in selectedItems)
-            {
-                this.StatusTB.Text = "Fetching Repository:  " + repository.GitUrl;
+            //foreach (GitManagerRepositoryViewModel repository in selectedItems)
+            //{
+            //    this.StatusTB.Text = "Fetching Repository (see log):  " + repository.Name;
 
-                await _controller.Fetch(Path.Combine(repository.BaseDirectory, ".git"), repository.GitUrl);
+            //    await _controller.GetRepository(repository.Name);
 
-                this.StatusTB.Text = "Fetch Complete:  " + repository.GitUrl;
-            }
+            //    this.StatusTB.Text = "Fetch Complete (see log):  " + repository.Name;
+            //}
         }
 
         private void RunScriptButton_Click(object sender, RoutedEventArgs e)
@@ -202,7 +293,7 @@ namespace SimpleWpf.GitManager
 
         private void PasswordTB_PasswordChanged(object sender, RoutedEventArgs e)
         {
-            _viewModel.Password = this.PasswordTB.Password;
+            //_viewModel.Password = this.PasswordTB.Password;
         }
     }
 }

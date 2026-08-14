@@ -10,6 +10,7 @@ namespace SimpleWpf.GitManager.ViewModel
         string _user;
         string _password;
         ObservableCollection<GitManagerRepositoryViewModel> _repositories;
+        ObservableCollection<TabViewModel> _tabs;
 
         public string Directory
         {
@@ -31,6 +32,11 @@ namespace SimpleWpf.GitManager.ViewModel
             get { return _repositories; }
             set { this.RaiseAndSetIfChanged(ref _repositories, value); }
         }
+        public ObservableCollection<TabViewModel> Tabs
+        {
+            get { return _tabs; }
+            set { this.RaiseAndSetIfChanged(ref _tabs, value); }
+        }
 
         public GitManagerViewModel()
         {
@@ -38,6 +44,7 @@ namespace SimpleWpf.GitManager.ViewModel
             this.User = string.Empty;
             this.Password = string.Empty;
             this.Repositories = new ObservableCollection<GitManagerRepositoryViewModel>();
+            this.Tabs = new ObservableCollection<TabViewModel>();
         }
     }
 }

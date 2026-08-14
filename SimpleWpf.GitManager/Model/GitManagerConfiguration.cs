@@ -12,11 +12,11 @@
         /// <summary>
         /// List of repositories under management
         /// </summary>
-        public List<GitRepository> Repositories { get; set; }
+        public List<GitRepositoryStub> Repositories { get; set; }
 
         public GitManagerConfiguration()
         {
-            this.Repositories = new List<GitRepository>();
+            this.Repositories = new List<GitRepositoryStub>();
         }
     }
 }

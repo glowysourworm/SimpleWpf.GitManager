@@ -1,6 +1,11 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:fa5="clr-namespace:FontAwesome5;assembly=FontAwesome5.Net">
+                    xmlns:fa5="clr-namespace:FontAwesome5;assembly=FontAwesome5.Net"
+                    xmlns:templateSelectors="clr-namespace:SimpleWpf.GitManager.TemplateSelectors"
+                    xmlns:styleSelectors="clr-namespace:SimpleWpf.GitManager.StyleSelectors"
+                    xmlns:region="clr-namespace:SimpleWpf.IocFramework.RegionManagement;assembly=SimpleWpf.IocFramework"
+                    xmlns:view="clr-namespace:SimpleWpf.GitManager.View"
+                    xmlns:viewModel="clr-namespace:SimpleWpf.GitManager.ViewModel">
 
     <!-- Theme Brushes -->
     <SolidColorBrush x:Key="LabelForeground">Gray</SolidColorBrush>
@@ -25,6 +30,40 @@
     <SolidColorBrush x:Key="RepoListBoxItemBackground1">#0C000000</SolidColorBrush>
     <SolidColorBrush x:Key="RepoListBoxItemBackground2">White</SolidColorBrush>
     <SolidColorBrush x:Key="RepoListBoxItemHoverBackground">#0C33AAFF</SolidColorBrush>
+    
+    <!-- DataTemplate Selectors -->
+    <templateSelectors:TabContentTemplateSelector x:Key="TabContentTemplateSelector" />
+    <templateSelectors:TabItemTemplateSelector x:Key="TabItemTemplateSelector" />
+
+    <!-- Style Selectors -->
+    <styleSelectors:TabStyleSelector x:Key="TabStyleSelector" />
+
+    <!-- Tab Item Templates -->
+    <DataTemplate x:Key="TabContentTemplate" DataType="{x:Type viewModel:TabViewModel}">
+        <TextBlock Text="{Binding Header}" />
+    </DataTemplate>
+    <DataTemplate x:Key="TabCloseableContentTemplate" DataType="{x:Type viewModel:TabViewModel}">
+        <Grid ColumnDefinitions="Auto, Auto">
+            <TextBlock Text="{Binding Header}" />
+            <Button x:Name="OpenDirectoryButton" 
+                    Grid.Column="1" 
+                    Margin="3" 
+                    Width="12" 
+                    Height="12" 
+                    Style="{StaticResource UserControlButton}">
+                <fa5:SvgAwesome Icon="Regular_WindowClose" Style="{StaticResource FontAwesomeIconDefault}" />
+            </Button>
+        </Grid>
+
+    </DataTemplate>
+    
+    <!-- Tab Content Templates -->
+    <DataTemplate x:Key="TabConfigurationDataTemplate" DataType="{x:Type viewModel:TabViewModel}">
+        <region:IocRegion region:IocRegionManager.DefaultViewType="{x:Type view:ConfigurationView}" />
+    </DataTemplate>
+    <DataTemplate x:Key="TabRepositoryDataTemplate" DataType="{x:Type viewModel:TabViewModel}">
+        <region:IocRegion region:IocRegionManager.DefaultViewType="{x:Type view:RepositoryView}" />
+    </DataTemplate>
 
     <!-- Font Awesome Icon Styles -->
     <Style TargetType="{x:Type fa5:SvgAwesome}" x:Key="FontAwesomeIconDefault">
@@ -47,9 +86,10 @@
 
     <Style TargetType="TextBlock" x:Key="RepoListBoxItemTextBlock" BasedOn="{StaticResource LabelTextBlock}">
         <Setter Property="Foreground" Value="{StaticResource LabelItemForeground}" />
-        <Setter Property="HorizontalAlignment" Value="Right" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
         <Setter Property="TextAlignment" Value="Right" />
-        <Setter Property="Margin" Value="20 3 3 3" />
+        <Setter Property="Margin" Value="3" />
     </Style>
 
     <!-- Text Box Styles -->

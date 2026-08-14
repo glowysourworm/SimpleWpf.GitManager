@@ -48,7 +48,7 @@ namespace SimpleWpf.GitManager
             // Read / Create Configuration
             try
             {
-                await controller.Initialize(configurationFile, DEFAULT_CONFIGURATION);
+                await controller.OpenConfiguration(configurationFile);
             }
             catch (Exception ex)
             {
