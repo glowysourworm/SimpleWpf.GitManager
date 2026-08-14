@@ -1,9 +1,11 @@
 ﻿using System.IO;
 
 using LibGit2Sharp;
+using LibGit2Sharp.Handlers;
 
 using Newtonsoft.Json;
 
+using SimpleWpf.Extensions.Event;
 using SimpleWpf.GitManager.Event;
 using SimpleWpf.GitManager.Interface;
 using SimpleWpf.GitManager.Model;
@@ -16,27 +18,26 @@ namespace SimpleWpf.GitManager.Controller
     public class GitController : IGitController
     {
         private readonly IIocEventAggregator _eventAggregator;
+        private readonly IGitLogManager _logManager;
 
         private GitManagerConfiguration _configuration;
         private string _configurationFile;
+        private string _configurationFileDefault;
 
         bool _isShutdown;
         bool _isDisposed;
 
         [IocImportingConstructor]
-        public GitController(IIocEventAggregator eventAggregator)
+        public GitController(IIocEventAggregator eventAggregator, IGitLogManager logManager)
         {
             _eventAggregator = eventAggregator;
+            _logManager = logManager;
 
             _configuration = null;
             _isShutdown = false;
             _isDisposed = false;
         }
 
-        public GitManagerConfiguration GetConfiguration()
-        {
-            return _configuration;
-        }
         public string GetConfigurationFile()
         {
             return _configurationFile;
@@ -46,73 +47,152 @@ namespace SimpleWpf.GitManager.Controller
             return Path.GetFullPath(_configurationFile);
         }
 
-        public async Task Initialize(string configurationFile, string defaultConfigurationFile)
+        public void SetConfiguration(SimpleEventHandler<GitManagerConfiguration> callback)
         {
-            try
-            {
-                _configurationFile = configurationFile;
-                _configuration = OpenConfiguration();
+            callback(_configuration);
 
-                // Init Repositories
-                if (!string.IsNullOrEmpty(_configuration.Directory))
-                {
-                    // Git Directories (assume)
-                    foreach (var directory in Directory.GetDirectories(_configuration.Directory))
-                    {
-                        var gitPath = Path.Combine(directory, ".git");
-                        var dirInfo = new DirectoryInfo(gitPath);
-                        var gitName = Directory.GetParent(gitPath).Name;           // Git naming convention does not name repository itself
-
-                        if (string.IsNullOrWhiteSpace(gitName))
-                            continue;
-
-                        if (Directory.Exists(gitPath))
-                        {
-                            // Load using LibGit2Sharp
-                            var gitRepo = new Repository(gitPath, new RepositoryOptions());
-
-                            // Initial Creation
-                            if (!_configuration.Repositories.Any(x => x.Name == gitName))
-                            {
-                                var repository = new GitRepository()
-                                {
-                                    BaseDirectory = dirInfo.FullName,
-                                    IsFork = false,
-                                    Name = gitName,
-                                    LastCommit = string.Format("Last Commit:  {0}, {1}, {2}",
-                                                    gitRepo.Head.Tip.Author.Name,
-                                                    gitRepo.Head.Tip.Author.Email,
-                                                    gitRepo.Head.Tip.Author.When),
-                                    LastAccessLocal = new DateTimeOffset(dirInfo.LastAccessTime),
-                                    LastAccessRemote = gitRepo.Head.Tip.Author.When,
-                                    GitUrl = gitRepo.Network.Remotes.FirstOrDefault()?.Url ?? "Not Specified"
-                                };
-
-                                _configuration.Repositories.Add(repository);
-                            }
-
-                            // Already Exists
-                            else
-                            {
-                                var repository = _configuration.Repositories.First(x => x.Name == gitName);
-
-                                repository.LastAccessRemote = gitRepo.Head.Tip.Author.When;
-                                repository.LastAccessLocal = new DateTimeOffset(dirInfo.LastAccessTime);
-                            }
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _configurationFile = defaultConfigurationFile;
-                _configuration = new GitManagerConfiguration();
-
-                throw new Exception("Initialization failed. Please check configuration", ex);
-            }
+            SaveConfiguration();
         }
 
-        private GitManagerConfiguration OpenConfiguration()
+        public Task Initialize(string configurationFile, string defaultConfigurationFile)
+        {
+            return Task.Run(() =>
+            {
+                _configurationFile = configurationFile;
+                _configurationFileDefault = defaultConfigurationFile;
+
+                InitializeImpl();
+            });
+        }
+        public Task RemoveAllReposFromConfiguration()
+        {
+            return Task.Run(() =>
+            {
+                // Logs
+                foreach (var repository in _configuration.Repositories)
+                {
+                    _logManager.RemoveLog(repository.Name);
+                }
+
+                // Repos
+                _configuration.Repositories.Clear();
+
+                // -> Save
+                SaveConfiguration();
+            });
+        }
+        public Task ReloadAllReposFromConfiguration()
+        {
+            return Task.Run(() =>
+            {
+                InitializeImpl();
+            });
+        }
+
+        public Task<GitRepository?> Fetch(string gitPath, string gitUrl)
+        {
+            return Task.Run(() =>
+            {
+                try
+                {
+                    using (var gitRepo = new Repository(gitPath))
+                    {
+                        var credentialsCallback = new CredentialsHandler((user, pass, types) =>
+                        {
+                            return new UsernamePasswordCredentials()
+                            {
+                                Username = user,
+                                Password = pass
+                            };
+                        });
+                        var progressCallback = new TransferProgressHandler(progress =>
+                        {
+                            return true;
+                        });
+
+                        var logMessage = string.Empty;
+
+
+
+                        Commands.Fetch(gitRepo, gitRepo.Head.RemoteName, gitRepo.Refs.Select(x => x.TargetIdentifier), new FetchOptions()
+                        {
+                            CredentialsProvider = credentialsCallback,
+                            Prune = false,
+                            OnTransferProgress = progressCallback
+
+                        }, logMessage);
+
+                        return UpdateOrAdd(gitRepo, true, true);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    return null;
+                }
+            });
+        }
+
+        // Updates configuration and returns Libgit2Sharp repository object
+        private GitRepository UpdateOrAdd(Repository gitRepo, bool isFetch, bool publishEvent)
+        {
+            if (!Directory.Exists(gitRepo.Info.Path))
+                throw new Exception("Git repository doesn't exist locally. Please do a clone first");
+
+            GitRepository repository = null;
+
+            var baseInfo = new DirectoryInfo(gitRepo.Info.Path);
+            var gitName = baseInfo.Parent.Name;
+
+            // Initial Creation
+            if (!_configuration.Repositories.Any(x => x.Name == gitName))
+            {
+                repository = new GitRepository()
+                {
+                    BaseDirectory = gitRepo.Info.WorkingDirectory,
+                    IsFork = false,
+                    IsHeadUpToDate = false,
+                    Name = gitName,
+                    LastCommitLocal = string.Format("{0}, {1}, {2}",
+                                    gitRepo.Head.Tip.Author.Name,
+                                    gitRepo.Head.Tip.Author.Email,
+                                    gitRepo.Head.Tip.Author.When),
+                    LastCommitRemote = string.Format("{0}, {1}, {2}",
+                                    gitRepo.Head.Tip.Author.Name,
+                                    gitRepo.Head.Tip.Author.Email,
+                                    gitRepo.Head.Tip.Author.When),
+                    GitUrl = gitRepo.Network.Remotes.FirstOrDefault()?.Url ?? "Not Specified"
+                };
+
+                _configuration.Repositories.Add(repository);
+            }
+
+            // Already Exists
+            else
+            {
+                repository = _configuration.Repositories.First(x => x.Name == gitName);
+
+                repository.LastCommitLocal = string.Format("{0}, {1}, {2}",
+                                gitRepo.Head.Tip.Author.Name,
+                                gitRepo.Head.Tip.Author.Email,
+                                gitRepo.Head.Tip.Author.When);
+                repository.LastCommitRemote = string.Format("{0}, {1}, {2}",
+                                gitRepo.Head.Tip.Author.Name,
+                                gitRepo.Head.Tip.Author.Email,
+                                gitRepo.Head.Tip.Author.When);
+            }
+
+            // Fetch time not stored in repository (or I haven't found it yet)
+            if (isFetch)
+                repository.LastFetch = DateTime.Now;
+
+            // -> Configuration Loaded Event
+            if (publishEvent)
+                _eventAggregator.GetEvent<ConfigurationLoadedEvent>().Publish(_configuration);
+
+            return _configuration.Repositories.First(x => x.Name == gitName);
+        }
+
+        private void OpenConfiguration(bool publishEvent)
         {
             try
             {
@@ -124,18 +204,23 @@ namespace SimpleWpf.GitManager.Controller
                     Formatting = Formatting.Indented,
                 };
 
-                using (var streamReader = new StreamReader(File.OpenRead(_configurationFile)))
+                using (var stream = File.OpenRead(_configurationFile))
                 {
-                    using (var reader = new JsonTextReader(streamReader))
+                    using (var streamReader = new StreamReader(stream))
                     {
-                        var configuration = serializer.Deserialize<GitManagerConfiguration>(reader);
+                        using (var reader = new JsonTextReader(streamReader))
+                        {
+                            var configuration = serializer.Deserialize<GitManagerConfiguration>(reader);
 
-                        if (configuration == null)
-                            throw new Exception("Configuration file read error!");
+                            if (configuration == null)
+                                throw new Exception("Configuration file read error!");
 
-                        _eventAggregator.GetEvent<StatusEvent>().Publish("Configuration Loaded:  " + _configurationFile);
+                            _configuration = configuration;
 
-                        return configuration;
+                            // -> Configuration Loaded Event
+                            if (publishEvent)
+                                _eventAggregator.GetEvent<ConfigurationLoadedEvent>().Publish(_configuration);
+                        }
                     }
                 }
             }
@@ -161,19 +246,61 @@ namespace SimpleWpf.GitManager.Controller
                     Formatting = Formatting.Indented,
                 };
 
-                using (var streamWriter = new StreamWriter(File.OpenWrite(_configurationFile)))
+                using (var stream = File.OpenWrite(_configurationFile))
                 {
-                    using (var writer = new JsonTextWriter(streamWriter))
+                    using (var streamWriter = new StreamWriter(stream))
                     {
-                        serializer.Serialize(writer, _configuration);
-
-                        _eventAggregator.GetEvent<StatusEvent>().Publish("Configuration Saved:  " + _configurationFile);
+                        using (var writer = new JsonTextWriter(streamWriter))
+                        {
+                            serializer.Serialize(writer, _configuration);
+                        }
                     }
                 }
             }
             catch (Exception ex)
             {
                 throw new Exception("Error saving configuration", ex);
+            }
+        }
+
+        private void InitializeImpl()
+        {
+            try
+            {
+                OpenConfiguration(false);
+
+                // Init Repositories
+                if (!string.IsNullOrEmpty(_configuration.Directory))
+                {
+                    // Git Directories (assume)
+                    foreach (var directory in Directory.GetDirectories(_configuration.Directory))
+                    {
+                        var gitPath = Path.Combine(directory, ".git");
+                        var dirInfo = new DirectoryInfo(gitPath);
+                        var gitName = Directory.GetParent(gitPath).Name;           // Git naming convention does not name repository itself
+
+                        if (string.IsNullOrWhiteSpace(gitName))
+                            continue;
+
+                        if (Directory.Exists(gitPath))
+                        {
+                            // Load using LibGit2Sharp
+                            using (var gitRepo = new Repository(gitPath, new RepositoryOptions()))
+                            {
+                                UpdateOrAdd(gitRepo, false, false);
+                            }
+                        }
+                    }
+                }
+
+                // -> Configuration Loaded Event
+                _eventAggregator.GetEvent<ConfigurationLoadedEvent>().Publish(_configuration);
+            }
+            catch (Exception ex)
+            {
+                _configuration = new GitManagerConfiguration();
+
+                throw new Exception("Initialization failed. Please check configuration", ex);
             }
         }
 

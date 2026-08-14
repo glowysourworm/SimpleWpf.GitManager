@@ -43,6 +43,21 @@ namespace SimpleWpf.GitManager.Component
             }
         }
 
+        public void RemoveLog(string repositoryName)
+        {
+            try
+            {
+                var logPath = Path.Combine(LOG_DIRECTORY, repositoryName, ".txt");
+
+                if (File.Exists(logPath))
+                    File.Delete(logPath);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error removing repository log", ex);
+            }
+        }
+
         public void SaveLog(string repositoryName, GitManagerLog log)
         {
             try

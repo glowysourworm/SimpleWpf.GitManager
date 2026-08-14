@@ -25,9 +25,6 @@ namespace SimpleWpf.GitManager
 
         protected override async void UserPreModuleInitialize()
         {
-            // Initialize configuration before proceeding
-            InitializeConfiguration();
-
             // Window Management:  The shell window must be defined as the main window before
             //                     opening another window (here, the dialog). So, perhaps it 
             //                     would be best to introduce a window management system to the
@@ -38,13 +35,9 @@ namespace SimpleWpf.GitManager
             // model will wait (for the configuration) until it's used by the MainWindow.
             //
             base.UserPreModuleInitialize();
-        }
 
-        /// <summary>
-        /// Initialization of the configuration must occur before other components are initialized.
-        /// </summary>
-        private async void InitializeConfiguration()
-        {
+            // Initialize configuration before proceeding
+            //
             // We can inject our initialize procedure(s) here
             //
             var controller = IocContainer.Get<IGitController>();
@@ -61,6 +54,8 @@ namespace SimpleWpf.GitManager
             {
                 MessageBox.Show("Configuration Error (default GitManager.json)", ex.Message);
             }
+
+
         }
 
         public override IEnumerable<ModuleDefinition> DefineModules()

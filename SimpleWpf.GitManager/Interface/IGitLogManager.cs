@@ -6,6 +6,7 @@ namespace SimpleWpf.GitManager.Interface
     {
         GitManagerLog GetLog(string repositoryName);
 
+        void RemoveLog(string repositoryName);
         void SaveLog(string repositoryName, GitManagerLog log);
     }
 }

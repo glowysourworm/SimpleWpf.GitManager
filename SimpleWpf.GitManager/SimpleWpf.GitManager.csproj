@@ -25,6 +25,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="SimpleWpf.IocFramework" Version="0.0.1" />
     <PackageReference Include="SimpleWpf.Native" Version="0.0.1" />
+    <PackageReference Include="SimpleWpf.Utilities" Version="0.0.1" />
   </ItemGroup>
 
   <ItemGroup>

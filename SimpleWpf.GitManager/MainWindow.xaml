@@ -51,7 +51,7 @@
                 <TextBlock Style="{StaticResource LabelTextBlock}">
                     <Run Text="Git Repos (" />
                     <Run Text="{Binding Repositories.Count, Mode=OneWay}" />
-                    <Run Text=")" />
+                    <Run Text=" local)" />
                 </TextBlock>
             </GroupBox.Header>
 
@@ -70,10 +70,10 @@
                             <fa5:SvgAwesome Icon="Brands_Git" Style="{StaticResource FontAwesomeIconDefault}" />
                         </Button>
 
-                        <Button x:Name="UpdateRepositoryButton" Grid.Column="2" Margin="3" Width="24" Height="24" 
+                        <Button x:Name="FetchRepositoryButton" Grid.Column="2" Margin="3" Width="24" Height="24" 
                                 Style="{StaticResource UserControlButton}" 
-                                ToolTip="Update Repository"
-                                Click="UpdateRepositoryButton_Click">
+                                ToolTip="Fetch Repository"
+                                Click="FetchRepositoryButton_Click">
                             <fa5:SvgAwesome Icon="Solid_Download" Style="{StaticResource FontAwesomeIconDefault}" />
                         </Button>
 
@@ -88,8 +88,10 @@
                 </Border>
 
                 <ScrollViewer Grid.Row="1" Padding="5" Margin="0 5 0 0" VerticalScrollBarVisibility="Auto">
-                    <ListBox ItemsSource="{Binding Repositories}"
+                    <ListBox x:Name="RepoLB"
+                             ItemsSource="{Binding Repositories}"
                              AlternationCount="2"
+                             SelectionMode="Extended"
                              HorizontalAlignment="Stretch" 
                              HorizontalContentAlignment="Stretch"
                              BorderBrush="LightGray" 
@@ -131,15 +133,15 @@
                                     <Grid ColumnDefinitions="Auto, *" RowDefinitions="Auto, Auto, Auto, Auto, Auto, *" HorizontalAlignment="Stretch">
                                         <TextBlock Text="Git Name" Style="{StaticResource RepoListBoxItemLabelTextBlock}" />
                                         <TextBlock Text="Local Path" Grid.Row="1" Style="{StaticResource RepoListBoxItemLabelTextBlock}" />
-                                        <TextBlock Text="Last Access (remote)" Grid.Row="2" Style="{StaticResource RepoListBoxItemLabelTextBlock}" />
-                                        <TextBlock Text="Last Access (local)" Grid.Row="3" Style="{StaticResource RepoListBoxItemLabelTextBlock}" />
-                                        <TextBlock Text="Last Commit" Grid.Row="4" Style="{StaticResource RepoListBoxItemLabelTextBlock}" />
+                                        <TextBlock Text="Last Commit (remote)" Grid.Row="2" Style="{StaticResource RepoListBoxItemLabelTextBlock}" />
+                                        <TextBlock Text="Last Commit (local)" Grid.Row="3" Style="{StaticResource RepoListBoxItemLabelTextBlock}" />
+                                        <TextBlock Text="Last Fetch" Grid.Row="4" Style="{StaticResource RepoListBoxItemLabelTextBlock}" />
 
                                         <TextBlock Text="{Binding Name}" Grid.Column="1" Style="{StaticResource RepoListBoxItemTextBlock}" />
                                         <TextBlock Text="{Binding BaseDirectory}" Grid.Column="1" Grid.Row="1" Style="{StaticResource RepoListBoxItemTextBlock}" />
-                                        <TextBlock Text="{Binding LastAccessRemote}" Grid.Column="1" Grid.Row="2" Style="{StaticResource RepoListBoxItemTextBlock}" />
-                                        <TextBlock Text="{Binding LastAccessLocal}" Grid.Column="1" Grid.Row="3" Style="{StaticResource RepoListBoxItemTextBlock}" />
-                                        <TextBlock Text="{Binding LastCommit}" Grid.Column="1" Grid.Row="4" Style="{StaticResource RepoListBoxItemTextBlock}" />
+                                        <TextBlock Text="{Binding LastCommitRemote}" Grid.Column="1" Grid.Row="2" Style="{StaticResource RepoListBoxItemTextBlock}" />
+                                        <TextBlock Text="{Binding LastCommitLocal}" Grid.Column="1" Grid.Row="3" Style="{StaticResource RepoListBoxItemTextBlock}" />
+                                        <TextBlock Text="{Binding LastFetch.LocalDateTime, StringFormat='{}{0:yyyy-MM-dd hh:mm:ss tt}'}" Grid.Column="1" Grid.Row="4" Style="{StaticResource RepoListBoxItemTextBlock}" />
                                     </Grid>
                                 </Border>
                             </DataTemplate>
