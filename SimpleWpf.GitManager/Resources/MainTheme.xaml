@@ -38,33 +38,6 @@
     <!-- Style Selectors -->
     <styleSelectors:TabStyleSelector x:Key="TabStyleSelector" />
 
-    <!-- Tab Item Templates -->
-    <DataTemplate x:Key="TabContentTemplate" DataType="{x:Type viewModel:TabViewModel}">
-        <TextBlock Text="{Binding Header}" />
-    </DataTemplate>
-    <DataTemplate x:Key="TabCloseableContentTemplate" DataType="{x:Type viewModel:TabViewModel}">
-        <Grid ColumnDefinitions="Auto, Auto">
-            <TextBlock Text="{Binding Header}" />
-            <Button x:Name="OpenDirectoryButton" 
-                    Grid.Column="1" 
-                    Margin="3" 
-                    Width="12" 
-                    Height="12" 
-                    Style="{StaticResource UserControlButton}">
-                <fa5:SvgAwesome Icon="Regular_WindowClose" Style="{StaticResource FontAwesomeIconDefault}" />
-            </Button>
-        </Grid>
-
-    </DataTemplate>
-    
-    <!-- Tab Content Templates -->
-    <DataTemplate x:Key="TabConfigurationDataTemplate" DataType="{x:Type viewModel:TabViewModel}">
-        <region:IocRegion region:IocRegionManager.DefaultViewType="{x:Type view:ConfigurationView}" />
-    </DataTemplate>
-    <DataTemplate x:Key="TabRepositoryDataTemplate" DataType="{x:Type viewModel:TabViewModel}">
-        <region:IocRegion region:IocRegionManager.DefaultViewType="{x:Type view:RepositoryView}" />
-    </DataTemplate>
-
     <!-- Font Awesome Icon Styles -->
     <Style TargetType="{x:Type fa5:SvgAwesome}" x:Key="FontAwesomeIconDefault">
         <Setter Property="Width" Value="16" />
@@ -106,6 +79,12 @@
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="Padding" Value="3" />
     </Style>
+    
+    <!-- Group Box Styles -->
+    <Style TargetType="GroupBox" x:Key="GroupBoxStyle">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Foreground" Value="#FF555555" />
+    </Style>
 
     <!-- Button Styles -->
     <Style x:Key="UserControlButton" TargetType="Button">
@@ -143,5 +122,62 @@
             </Setter.Value>
         </Setter>
     </Style>
+    
+    <!-- List Box Styles -->
+    <Style TargetType="ListBoxItem" x:Key="ListBoxItemContainerStyle">
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Background" Value="Transparent" />
+
+        <!-- Data Binding -->
+        <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{StaticResource RepoListBoxItemHoverBackground}" />
+            </Trigger>
+
+            <!-- Alternation Background (count must be set to 2 on the ListBox) -->
+            <Trigger Property="ItemsControl.AlternationIndex" Value="0">
+                <Setter Property="Background" Value="{StaticResource RepoListBoxItemBackground1}" />
+            </Trigger>
+            <Trigger Property="ItemsControl.AlternationIndex" Value="1">
+                <Setter Property="Background" Value="{StaticResource RepoListBoxItemBackground2}" />
+            </Trigger>
+
+        </Style.Triggers>
+    </Style>
+
+    <!-- Tab Item Templates -->
+    <DataTemplate x:Key="TabContentTemplate" DataType="{x:Type viewModel:TabViewModel}">
+        <TextBlock Text="{Binding Header}" Style="{StaticResource LabelTextBlock}" Margin="3" />
+    </DataTemplate>
+
+    <DataTemplate x:Key="TabCloseableContentTemplate" DataType="{x:Type viewModel:TabViewModel}">
+        <Grid ColumnDefinitions="Auto, Auto">
+            <TextBlock Text="{Binding Header}" Style="{StaticResource LabelTextBlock}" VerticalAlignment="Center" Margin="3" />
+            <Button x:Name="OpenDirectoryButton" 
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Center"
+                    HorizontalContentAlignment="Center"
+                    VerticalContentAlignment="Center"
+                    Grid.Column="1" 
+                    Margin="3"
+                    Width="20" 
+                    Height="20" 
+                    Style="{StaticResource UserControlButton}">
+                <TextBlock Style="{StaticResource LabelTextBlock}"
+                           TextAlignment="Center">X</TextBlock>
+            </Button>
+        </Grid>
+    </DataTemplate>
+
+    <!-- Tab Content Templates -->
+    <DataTemplate x:Key="TabConfigurationDataTemplate" DataType="{x:Type viewModel:TabViewModel}">
+        <region:IocRegion region:IocRegionManager.DefaultViewType="{x:Type view:ConfigurationView}" />
+    </DataTemplate>
+    <DataTemplate x:Key="TabRepositoryDataTemplate" DataType="{x:Type viewModel:TabViewModel}">
+        <region:IocRegion region:IocRegionManager.DefaultViewType="{x:Type view:RepositoryView}" />
+    </DataTemplate>
 
 </ResourceDictionary>

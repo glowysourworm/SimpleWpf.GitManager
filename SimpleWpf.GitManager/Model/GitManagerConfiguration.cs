@@ -9,14 +9,9 @@
         public string User { get; set; }
         public string Password { get; set; }
 
-        /// <summary>
-        /// List of repositories under management
-        /// </summary>
-        public List<GitRepositoryStub> Repositories { get; set; }
-
         public GitManagerConfiguration()
         {
-            this.Repositories = new List<GitRepositoryStub>();
+
         }
     }
 }

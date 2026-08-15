@@ -30,7 +30,19 @@ namespace SimpleWpf.GitManager.Event
         Fetch
     }
 
-    public class RepositoryEvent : IocEvent<RepositoryEventType>
+    public class RepositoryEventData
+    {
+        public string RepositoryName { get; set; }
+        public RepositoryEventType EventType { get; set; }
+
+        public RepositoryEventData()
+        {
+            this.RepositoryName = string.Empty;
+            this.EventType = RepositoryEventType.Load;
+        }
+    }
+
+    public class RepositoryEvent : IocEvent<RepositoryEventData>
     {
     }
 }

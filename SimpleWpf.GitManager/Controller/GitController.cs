@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Windows.Threading;
 
 using Newtonsoft.Json;
 
@@ -8,6 +9,7 @@ using SimpleWpf.GitManager.Interface;
 using SimpleWpf.GitManager.Model;
 using SimpleWpf.IocFramework.Application.Attribute;
 using SimpleWpf.IocFramework.EventAggregation;
+using SimpleWpf.Utilities;
 
 namespace SimpleWpf.GitManager.Controller
 {
@@ -18,8 +20,10 @@ namespace SimpleWpf.GitManager.Controller
         private readonly IGitRepositoryManager _repositoryManager;
         private readonly IGitLogManager _logManager;
 
+        // Configuration (Primary)
+        //
         private GitManagerConfiguration _configuration;
-        private string _configurationFile;
+        string _configurationFile;
 
         bool _isDisposed;
 
@@ -32,8 +36,12 @@ namespace SimpleWpf.GitManager.Controller
             _repositoryManager = repositoryManager;
             _logManager = logManager;
 
-            _configuration = null;
             _isDisposed = false;
+
+            eventAggregator.GetEvent<RepositoryEvent>().Subscribe(data =>
+            {
+                BasicHelpers.InvokeDispatcher(OnRepositoryEvent, DispatcherPriority.Background, data);
+            });
         }
 
         public string GetConfigurationFile()
@@ -45,11 +53,23 @@ namespace SimpleWpf.GitManager.Controller
             return Path.GetFullPath(_configurationFile);
         }
 
-        public Task SetConfiguration(SimpleEventHandler<GitManagerConfiguration> callback)
+        public Task SetConfiguration(SimpleEventHandler<GitManagerConfiguration> callback, bool requiresReload)
         {
             callback(_configuration);
 
-            return SaveConfiguration();
+            return Task.Run(async () =>
+            {
+                await SaveConfiguration();
+
+                if (requiresReload)
+                {
+                    // Repos -> Log (event aggregator)
+                    _repositoryManager.RemoveAll();
+
+                    // Reload -> Log (event aggregator)
+                    _repositoryManager.Initialize(_configuration);
+                }
+            });
         }
 
         public void GetConfiguration(SimpleEventHandler<GitManagerConfiguration> callback)
@@ -61,36 +81,39 @@ namespace SimpleWpf.GitManager.Controller
         {
             return _repositoryManager.Get(gitName);
         }
+        public GitRepositoryLog GetRepositoryLog(string gitName)
+        {
+            return _logManager.Get(gitName);
+        }
         public IEnumerable<string> GetRepositoryList()
         {
             return _repositoryManager.GetList();
         }
 
-        public Task RemoveAllReposFromConfiguration()
+        public Task Fetch(string repositoryName)
         {
             return Task.Run(async () =>
             {
-                // Configuration
-                _configuration.Repositories.Clear();
+                _repositoryManager.Fetch(repositoryName, _configuration.User, _configuration.Password, logMessage =>
+                {
+                    // Libgit2Sharp:  Log messages sometimes have several lines at once
+                    //                sent back from the Git proxy
 
-                // Repos
-                await _repositoryManager.RemoveAll();
+                    if (!string.IsNullOrWhiteSpace(logMessage))
+                    {
+                        var logLines = logMessage.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-                // Logs
-                await _logManager.RemoveAll();
+                        foreach (var message in logLines)
+                        {
+                            _logManager.Log(repositoryName, logMessage);
+                        }
+                    }
 
-                // -> Save
-                await SaveConfiguration();
+                    // Git cancel option (true for continue)
+                    return true;
+                });
             });
         }
-        public Task ReloadAllReposFromConfiguration()
-        {
-            return Task.Run(async () =>
-            {
-                await _repositoryManager.Initialize(_configuration);
-            });
-        }
-
         public Task OpenConfiguration(string configurationFile)
         {
             return Task.Run(async () =>
@@ -106,7 +129,7 @@ namespace SimpleWpf.GitManager.Controller
                     if (!File.Exists(_configurationFile))
                     {
                         File.Create(_configurationFile);
-                        await LoadConfiguration(new GitManagerConfiguration());
+                        LoadConfiguration(new GitManagerConfiguration());
                         return;
                     }
 
@@ -124,7 +147,7 @@ namespace SimpleWpf.GitManager.Controller
                                 var configuration = serializer.Deserialize<GitManagerConfiguration>(reader);
 
                                 // File (or) Default
-                                await LoadConfiguration(configuration ?? new GitManagerConfiguration());
+                                LoadConfiguration(configuration ?? new GitManagerConfiguration());
                             }
                         }
                     }
@@ -135,7 +158,6 @@ namespace SimpleWpf.GitManager.Controller
                 }
             });
         }
-
         public Task SaveConfiguration()
         {
             return Task.Run(() =>
@@ -163,7 +185,7 @@ namespace SimpleWpf.GitManager.Controller
                                 serializer.Serialize(writer, _configuration);
 
                                 // -> Configuration Event
-                                _eventAggregator.GetEvent<ConfigurationEvent>().Publish(ConfigurationEventType.Saved);
+                                // _eventAggregator.GetEvent<ConfigurationEvent>().Publish(ConfigurationEventType.Saved);
                             }
                         }
                     }
@@ -175,28 +197,59 @@ namespace SimpleWpf.GitManager.Controller
             });
         }
 
-        private Task LoadConfiguration(GitManagerConfiguration configuration)
+        private void LoadConfiguration(GitManagerConfiguration configuration)
         {
-            return Task.Run(async () =>
+            try
             {
-                try
+                _configuration = configuration;
+
+                // -> Initialize IGitRepositoryManager -> Logs (event aggregator)
+                _repositoryManager.Initialize(_configuration);
+
+                // -> Configuration Event
+                _eventAggregator.GetEvent<ConfigurationEvent>().Publish(ConfigurationEventType.Loaded);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        private void OnRepositoryEvent(RepositoryEventData data)
+        {
+            // Procedure:  Use this to serialize loading of repositories
+            //
+            // 0) IGitRepositoryManager loaded repository
+            // 1) IGitLogManager loads repository log
+            // 2) Send event to the front end
+
+            switch (data.EventType)
+            {
+                case RepositoryEventType.Add:
                 {
-                    _configuration = configuration;
-
-                    // -> Initialize IGitRepositoryManager
-                    await _repositoryManager.Initialize(_configuration);
-
-                    // -> Initialize IGitLogManager
-                    await _logManager.Initialize(_configuration);
-
-                    // -> Configuration Event
-                    _eventAggregator.GetEvent<ConfigurationEvent>().Publish(ConfigurationEventType.Loaded);
+                    if (!_logManager.Exists(data.RepositoryName))
+                        _logManager.Add(data.RepositoryName);
                 }
-                catch (Exception ex)
+                break;
+                case RepositoryEventType.Remove:
                 {
-                    throw ex;
+                    if (_logManager.Exists(data.RepositoryName))
+                        _logManager.Remove(data.RepositoryName);
                 }
-            });
+                break;
+                case RepositoryEventType.RemoveAll:
+                {
+                    _logManager.RemoveAll();
+                }
+                break;
+                case RepositoryEventType.Load:
+                case RepositoryEventType.Fetch:
+                    break;
+                default:
+                    throw new Exception("Unhandled Repository Event Type");
+            }
+
+            _eventAggregator.GetEvent<RepositoryViewModelEvent>().Publish(data);
         }
 
         public void Dispose()

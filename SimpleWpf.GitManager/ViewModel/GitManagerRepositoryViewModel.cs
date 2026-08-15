@@ -11,12 +11,14 @@ namespace SimpleWpf.GitManager.ViewModel
         string _name;
         string _lastCommitRemote;
         string _lastCommitLocal;
-        string _loadingMessage;
-        bool _isLoading;
         bool _isFork;
         bool _isHeadUpToDate;
         uint _size;
         DateTimeOffset _lastFetch;
+
+        string _loadingMessage;
+        bool _isLoading;
+        bool _isSelected;
 
         public string Name
         {
@@ -43,16 +45,6 @@ namespace SimpleWpf.GitManager.ViewModel
             get { return _lastCommitLocal; }
             set { this.RaiseAndSetIfChanged(ref _lastCommitLocal, value); }
         }
-        public string LoadingMessage
-        {
-            get { return _loadingMessage; }
-            set { this.RaiseAndSetIfChanged(ref _loadingMessage, value); }
-        }
-        public bool IsLoading
-        {
-            get { return _isLoading; }
-            set { this.RaiseAndSetIfChanged(ref _isLoading, value); }
-        }
         public bool IsFork
         {
             get { return _isFork; }
@@ -74,6 +66,22 @@ namespace SimpleWpf.GitManager.ViewModel
             set { this.RaiseAndSetIfChanged(ref _lastFetch, value); }
         }
 
+        public string LoadingMessage
+        {
+            get { return _loadingMessage; }
+            set { this.RaiseAndSetIfChanged(ref _loadingMessage, value); }
+        }
+        public bool IsLoading
+        {
+            get { return _isLoading; }
+            set { this.RaiseAndSetIfChanged(ref _isLoading, value); }
+        }
+        public bool IsSelected
+        {
+            get { return _isSelected; }
+            set { this.RaiseAndSetIfChanged(ref _isSelected, value); }
+        }
+
         public ObservableCollection<GitManagerLogMessageViewModel> Log { get; set; }
 
         public GitManagerRepositoryViewModel()
@@ -87,8 +95,10 @@ namespace SimpleWpf.GitManager.ViewModel
             this.LastCommitLocal = string.Empty;
             this.LastCommitRemote = string.Empty;
             this.LastFetch = DateTimeOffset.MinValue;
+
             this.LoadingMessage = string.Empty;
             this.IsLoading = false;
+            this.IsSelected = false;
 
             this.Log = new ObservableCollection<GitManagerLogMessageViewModel>();
         }

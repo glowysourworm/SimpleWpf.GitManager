@@ -11,6 +11,8 @@ namespace SimpleWpf.GitManager.ViewModel
     public class TabViewModel : ViewModelBase
     {
         string _header;
+        bool _isSelected;
+        bool _isClosable;
         TabType _type;
         object? _tabDataContext;
 
@@ -18,6 +20,16 @@ namespace SimpleWpf.GitManager.ViewModel
         {
             get { return _header; }
             set { this.RaiseAndSetIfChanged(ref _header, value); }
+        }
+        public bool IsSelected
+        {
+            get { return _isSelected; }
+            set { this.RaiseAndSetIfChanged(ref _isSelected, value); }
+        }
+        public bool IsClosable
+        {
+            get { return _isClosable; }
+            set { this.RaiseAndSetIfChanged(ref _isClosable, value); }
         }
         public TabType Type
         {
@@ -33,6 +45,8 @@ namespace SimpleWpf.GitManager.ViewModel
         public TabViewModel()
         {
             this.Header = string.Empty;
+            this.IsSelected = false;
+            this.IsClosable = false;
             this.Type = TabType.Configuration;
             this.TabDataContext = null;
         }

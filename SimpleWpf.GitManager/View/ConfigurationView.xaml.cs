@@ -36,7 +36,8 @@ namespace SimpleWpf.GitManager.View
 
         private void ConfigurationView_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
-            _viewModel = (e.NewValue as TabViewModel).TabDataContext as GitManagerViewModel;
+            if (e.NewValue != null)
+                _viewModel = (e.NewValue as TabViewModel).TabDataContext as GitManagerViewModel;
         }
 
         private void PasswordTB_PasswordChanged(object sender, System.Windows.RoutedEventArgs e)
@@ -63,6 +64,18 @@ namespace SimpleWpf.GitManager.View
                     Type = ViewEventType.ConfigurationModifiedReload
                 });
             }
+        }
+
+        private void RepoLB_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            var viewModel = this.RepoLB.SelectedItem as GitManagerRepositoryViewModel;
+
+            if (viewModel != null)
+                _eventAggregator.GetEvent<ViewEvent>().Publish(new ViewEventData()
+                {
+                    RepositoryName = viewModel.Name,
+                    Type = ViewEventType.RepositoryViewRequest
+                });
         }
     }
 }

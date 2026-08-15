@@ -2,9 +2,11 @@
 using System.Xml.Serialization;
 
 using SimpleWpf.Extensions.Collection;
+using SimpleWpf.GitManager.Event;
 using SimpleWpf.GitManager.Interface;
 using SimpleWpf.GitManager.Model;
 using SimpleWpf.IocFramework.Application.Attribute;
+using SimpleWpf.IocFramework.EventAggregation;
 using SimpleWpf.SimpleCollections.Collection;
 using SimpleWpf.SimpleCollections.Extension;
 
@@ -16,32 +18,65 @@ namespace SimpleWpf.GitManager.Component
         readonly string LOG_DIRECTORY = ".\\Logs";
         readonly string LOG_EXT = ".gmlog";
 
+        private readonly IIocEventAggregator _eventAggregator;
+
         SimpleDictionary<string, GitRepositoryLog> _repositoryLogs;
 
-        public GitLogManager()
+        [IocImportingConstructor]
+        public GitLogManager(IIocEventAggregator eventAggregator)
         {
             _repositoryLogs = new SimpleDictionary<string, GitRepositoryLog>();
+
+            _eventAggregator = eventAggregator;
         }
 
-        public Task Initialize(GitManagerConfiguration configuration)
+        public void Initialize(IEnumerable<GitRepositoryStub> repositories)
         {
-            return Task.Run(() =>
+            if (!Directory.Exists(LOG_DIRECTORY))
+                Directory.CreateDirectory(LOG_DIRECTORY);
+
+            _repositoryLogs.Clear();
+
+            var duplicates = repositories.WithDuplicate(x => x.Name);
+
+            if (duplicates.Any())
+                throw new Exception("Duplicate repositories found!");
+
+            foreach (var repository in repositories)
             {
-                if (!Directory.Exists(LOG_DIRECTORY))
-                    Directory.CreateDirectory(LOG_DIRECTORY);
+                var logFile = CreateLogFilePath(repository.Name);
 
-                _repositoryLogs.Clear();
+                // Create / Load
+                var log = LoadLog(repository.Name);
 
-                foreach (var repository in configuration.Repositories)
-                {
-                    var logFile = CreateLogFilePath(repository.BaseDirectory, repository.Name);
+                _repositoryLogs.Add(repository.Name, log);
+            }
+        }
 
-                    // Create / Load
-                    var log = LoadLog(repository.BaseDirectory, repository.Name);
+        public bool Exists(string repositoryName)
+        {
+            return _repositoryLogs.ContainsKey(repositoryName);
+        }
 
-                    _repositoryLogs.Add(repository.Name, log);
-                }
-            });
+        public void Add(string repositoryName)
+        {
+            if (_repositoryLogs.ContainsKey(repositoryName))
+                throw new Exception("IGitLogManager already contains log for specified repository");
+
+            GitRepositoryLog log = null;
+
+            // Check Disk
+            if (LogExists(repositoryName))
+                log = LoadLog(repositoryName);
+
+            else
+                log = new GitRepositoryLog();
+
+            // Add
+            _repositoryLogs.Add(repositoryName, log);
+
+            // Save (ensure file on disk)
+            SaveLog(repositoryName);
         }
 
         public void Clear(string repositoryName)
@@ -52,27 +87,21 @@ namespace SimpleWpf.GitManager.Component
             _repositoryLogs[repositoryName].Messages.Clear();
         }
 
-        public Task Remove(string repositoryName)
+        public void Remove(string repositoryName)
         {
-            return Task.Run(() =>
-            {
-                RemoveLog(repositoryName);
+            RemoveLog(repositoryName);
 
-                _repositoryLogs.Filter(x => x.Key == repositoryName);
-            });
+            _repositoryLogs.Filter(x => x.Key == repositoryName);
         }
 
-        public Task RemoveAll()
+        public void RemoveAll()
         {
-            return Task.Run(() =>
+            foreach (var repository in _repositoryLogs.Keys)
             {
-                foreach (var repository in _repositoryLogs.Keys)
-                {
-                    RemoveLog(repository);
-                }
+                RemoveLog(repository);
+            }
 
-                _repositoryLogs.Clear();
-            });
+            _repositoryLogs.Clear();
         }
 
         public GitRepositoryLog Get(string repositoryName)
@@ -83,58 +112,67 @@ namespace SimpleWpf.GitManager.Component
             return _repositoryLogs[repositoryName];
         }
 
-        public Task Log(string repositoryName, string logMessage)
+        public void Log(string repositoryName, string logMessage)
         {
-            return Task.Run(() =>
+            var log = new GitRepositoryLogData()
             {
-                _repositoryLogs[repositoryName].Messages.Add(new GitRepositoryLogData()
+                Message = logMessage,
+                Timestamp = DateTime.Now
+            };
+
+            _repositoryLogs[repositoryName].Messages.Add(log);
+
+            SaveLog(repositoryName);
+
+            _eventAggregator.GetEvent<LogEvent>().Publish(new LogEventData()
+            {
+                RepositoryName = repositoryName,
+                Data = log
+            });
+        }
+
+        public void Log(string repositoryName, IEnumerable<string> logMessages)
+        {
+            foreach (var message in logMessages)
+            {
+                var log = new GitRepositoryLogData()
                 {
-                    Message = logMessage,
+                    Message = message,
                     Timestamp = DateTime.Now
-                });
+                };
 
-                SaveLog(repositoryName);
-            });
-        }
+                _repositoryLogs[repositoryName].Messages.Add(log);
 
-        public Task Log(string repositoryName, IEnumerable<string> logMessages)
-        {
-            return Task.Run(() =>
-            {
-                foreach (var message in logMessages)
-                    _repositoryLogs[repositoryName].Messages.Add(new GitRepositoryLogData()
-                    {
-                        Message = message,
-                        Timestamp = DateTime.Now
-                    });
-
-                SaveLog(repositoryName);
-            });
-        }
-
-        public Task RemoveUnused(GitManagerConfiguration configuration)
-        {
-            return Task.Run(() =>
-            {
-                // Log Directory
-                var logFiles = Directory.GetFiles(LOG_DIRECTORY, "*" + LOG_EXT);
-
-                // Search for unused log files
-                foreach (var file in logFiles)
+                _eventAggregator.GetEvent<LogEvent>().Publish(new LogEventData()
                 {
-                    var repoName = Path.GetFileName(file);
+                    RepositoryName = repositoryName,
+                    Data = log
+                });
+            }
 
-                    if (!configuration.Repositories.Any(x => x.Name == repoName))
-                        File.Delete(file);
-                }
-            });
+            SaveLog(repositoryName);
+        }
+
+        public void RemoveUnused(IEnumerable<GitRepositoryStub> currentList)
+        {
+            // Log Directory
+            var logFiles = Directory.GetFiles(LOG_DIRECTORY, "*" + LOG_EXT);
+
+            // Search for unused log files
+            foreach (var file in logFiles)
+            {
+                var repoName = Path.GetFileName(file);
+
+                if (!currentList.Any(x => x.Name == repoName))
+                    File.Delete(file);
+            }
         }
 
         private void RemoveLog(string repositoryName)
         {
             try
             {
-                var logPath = Path.Combine(LOG_DIRECTORY, repositoryName, LOG_EXT);
+                var logPath = CreateLogFilePath(repositoryName);
 
                 if (File.Exists(logPath))
                     File.Delete(logPath);
@@ -149,7 +187,7 @@ namespace SimpleWpf.GitManager.Component
         {
             try
             {
-                var logPath = Path.Combine(LOG_DIRECTORY, repositoryName, LOG_EXT);
+                var logPath = CreateLogFilePath(repositoryName);
                 var logMessages = _repositoryLogs[repositoryName];
 
                 using (var stream = File.OpenWrite(logPath))
@@ -165,11 +203,25 @@ namespace SimpleWpf.GitManager.Component
             }
         }
 
-        private GitRepositoryLog LoadLog(string repositoryDirectory, string repositoryName)
+        private bool LogExists(string repositoryName)
         {
             try
             {
-                var logPath = CreateLogFilePath(repositoryDirectory, repositoryName);
+                var logPath = CreateLogFilePath(repositoryName);
+
+                return File.Exists(logPath);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        private GitRepositoryLog LoadLog(string repositoryName)
+        {
+            try
+            {
+                var logPath = CreateLogFilePath(repositoryName);
 
                 // New
                 if (!File.Exists(logPath))
@@ -186,7 +238,15 @@ namespace SimpleWpf.GitManager.Component
 
                     // OrderBy timestamp
                     foreach (var message in log.Messages.OrderBy(x => x.Timestamp))
+                    {
                         result.Messages.Add(message);
+
+                        _eventAggregator.GetEvent<LogEvent>().Publish(new LogEventData()
+                        {
+                            RepositoryName = repositoryName,
+                            Data = message
+                        });
+                    }
                 }
 
                 return result;
@@ -197,9 +257,9 @@ namespace SimpleWpf.GitManager.Component
             }
         }
 
-        private string CreateLogFilePath(string repositoryDirectory, string repositoryName)
+        private string CreateLogFilePath(string repositoryName)
         {
-            return Path.Combine(LOG_DIRECTORY, repositoryName, LOG_EXT);
+            return Path.Combine(LOG_DIRECTORY, repositoryName + LOG_EXT);
         }
 
         public void Dispose()

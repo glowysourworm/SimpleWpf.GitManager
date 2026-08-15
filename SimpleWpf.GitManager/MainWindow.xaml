@@ -36,7 +36,9 @@
         </Menu>
         
         <!-- Content -->
-        <TabControl Grid.Row="1"
+        <TabControl x:Name="MainTabCtrl"
+                    Grid.Row="1"
+                    SelectedIndex="0"
                     ItemsSource="{Binding Tabs}"
                     ContentTemplateSelector="{StaticResource TabItemTemplateSelector}"
                     ItemTemplateSelector="{StaticResource TabContentTemplateSelector}">
