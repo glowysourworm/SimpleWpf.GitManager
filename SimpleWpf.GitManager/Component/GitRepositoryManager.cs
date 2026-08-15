@@ -40,7 +40,7 @@ namespace SimpleWpf.GitManager.Component
             return _repositories.Select(r => r.Name).ToList();
         }
 
-        public void Fetch(string gitName, ProgressHandler progressHandler)
+        public void Fetch(string gitName, string userName, string password, ProgressHandler progressHandler)
         {
             try
             {
@@ -51,12 +51,16 @@ namespace SimpleWpf.GitManager.Component
                     // Repository Event (Fetch)
                     var baseInfo = new DirectoryInfo(gitRepo.Info.Path);
 
-                    var credentialsCallback = new CredentialsHandler((user, pass, types) =>
+                    // CREDENTIALS:  This would be where to inject the online credentials services.. we're going
+                    //               to simplify this; or maybe try Libgit2Sharp; but we won't need it for our
+                    //               github account.
+                    //
+                    var credentialsCallback = new CredentialsHandler((url, userNameFromUrl, types) =>
                     {
                         return new UsernamePasswordCredentials()
                         {
-                            Username = user,
-                            Password = pass
+                            Username = userName,
+                            Password = password
                         };
                     });
                     var progressCallback = new TransferProgressHandler(progress =>
