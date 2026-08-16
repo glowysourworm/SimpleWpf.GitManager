@@ -28,8 +28,7 @@
 
                 <Button x:Name="RunScriptButton" Grid.Column="2" Margin="3" Width="24" Height="24" 
                                 Style="{StaticResource UserControlButton}" 
-                                ToolTip="Run Script"
-                                Click="RunScriptButton_Click">
+                                ToolTip="Run Script">
                     <fa5:SvgAwesome Icon="Solid_Terminal" Style="{StaticResource FontAwesomeIconDefault}" />
                 </Button>
             </ToolBar>

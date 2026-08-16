@@ -1,4 +1,4 @@
-﻿using LibGit2Sharp.Handlers;
+﻿using SimpleGit;
 
 using SimpleWpf.GitManager.Model;
 
@@ -14,12 +14,12 @@ namespace SimpleWpf.GitManager.Interface
         /// <summary>
         /// Gets repository information from the manager
         /// </summary>
-        GitRepositoryStub Get(string gitName);
+        GitRepository Get(string gitName);
 
         /// <summary>
         /// Gets all repositories from the manager
         /// </summary>
-        IEnumerable<GitRepositoryStub> GetAll();
+        IEnumerable<GitRepository> GetAll();
 
         /// <summary>
         /// Initialize the repository manager with a new configuration
@@ -34,7 +34,7 @@ namespace SimpleWpf.GitManager.Interface
         /// <summary>
         /// Loads git repository from local path, then calls remote fetch
         /// </summary>
-        void Fetch(string gitName, string user, string password, ProgressHandler progressHandler);
+        void Fetch(string gitName, string userName, string password, GitHandlers.GitLogHandler logHandler);
 
         /// <summary>
         /// Removes all git repositories from the manager

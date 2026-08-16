@@ -1,7 +1,6 @@
 ﻿using System.IO;
 
-using LibGit2Sharp;
-using LibGit2Sharp.Handlers;
+using SimpleGit;
 
 using SimpleWpf.GitManager.Event;
 using SimpleWpf.GitManager.Interface;
@@ -16,21 +15,21 @@ namespace SimpleWpf.GitManager.Component
     {
         private readonly IIocEventAggregator _eventAggregator;
 
-        private List<GitRepositoryStub> _repositories;
+        private List<GitRepository> _repositories;
 
         [IocImportingConstructor]
         public GitRepositoryManager(IIocEventAggregator eventAggregator)
         {
             _eventAggregator = eventAggregator;
-            _repositories = new List<GitRepositoryStub>();
+            _repositories = new List<GitRepository>();
         }
 
-        public GitRepositoryStub Get(string gitName)
+        public GitRepository Get(string gitName)
         {
             return _repositories.First(x => x.Name == gitName);
         }
 
-        public IEnumerable<GitRepositoryStub> GetAll()
+        public IEnumerable<GitRepository> GetAll()
         {
             return _repositories;
         }
@@ -40,51 +39,25 @@ namespace SimpleWpf.GitManager.Component
             return _repositories.Select(r => r.Name).ToList();
         }
 
-        public void Fetch(string gitName, string userName, string password, ProgressHandler progressHandler)
+        public void Fetch(string gitName, string userName, string password, GitHandlers.GitLogHandler logHandler)
         {
             try
             {
                 var repository = _repositories.First(x => x.Name == gitName);
 
-                using (var gitRepo = new Repository(repository.GitPath))
+                // Update Fetch
+                //repository.LastFetch = DateTime.Now;
+
+                var proxy = new GitProxy(repository);
+
+                // -> SimpleGit Fetch (command line terminal proxy)
+                proxy.Fetch(logHandler);
+
+                _eventAggregator.GetEvent<RepositoryEvent>().Publish(new RepositoryEventData()
                 {
-                    // Repository Event (Fetch)
-                    var baseInfo = new DirectoryInfo(gitRepo.Info.Path);
-
-                    // CREDENTIALS:  This would be where to inject the online credentials services.. we're going
-                    //               to simplify this; or maybe try Libgit2Sharp; but we won't need it for our
-                    //               github account.
-                    //
-                    var credentialsCallback = new CredentialsHandler((url, userNameFromUrl, types) =>
-                    {
-                        return new UsernamePasswordCredentials()
-                        {
-                            Username = userName,
-                            Password = password
-                        };
-                    });
-                    var progressCallback = new TransferProgressHandler(progress =>
-                    {
-                        return true;
-                    });
-
-                    Commands.Fetch(gitRepo, gitRepo.Head.RemoteName, Enumerable.Empty<string>(), new FetchOptions()
-                    {
-                        CredentialsProvider = credentialsCallback,
-                        Prune = false,
-                        OnTransferProgress = progressCallback,
-                        OnProgress = progressHandler
-
-                    }, "Fetching from GitManager:  " + DateTime.Now.ToString());
-
-                    _eventAggregator.GetEvent<RepositoryEvent>().Publish(new RepositoryEventData()
-                    {
-                        EventType = RepositoryEventType.Fetch,
-                        RepositoryName = gitName
-                    });
-
-                    UpdateOrAdd(gitRepo, true);
-                }
+                    EventType = RepositoryEventType.Fetch,
+                    RepositoryName = gitName
+                });
             }
             catch (Exception ex)
             {
@@ -126,11 +99,7 @@ namespace SimpleWpf.GitManager.Component
         {
             if (Directory.Exists(gitPath))
             {
-                // Load using LibGit2Sharp
-                using (var gitRepo = new Repository(gitPath, new RepositoryOptions()))
-                {
-                    UpdateOrAdd(gitRepo, false);
-                }
+                UpdateOrAdd(gitPath);
             }
         }
 
@@ -146,72 +115,43 @@ namespace SimpleWpf.GitManager.Component
         }
 
         // Updates configuration and returns Libgit2Sharp repository object
-        private GitRepositoryStub UpdateOrAdd(Repository gitRepo, bool isFetch)
+        private GitRepository UpdateOrAdd(string gitPath)
         {
-            if (!Directory.Exists(gitRepo.Info.Path))
+            if (!Directory.Exists(gitPath))
                 throw new Exception("Git repository doesn't exist locally. Please do a clone first");
 
-            GitRepositoryStub repository = null;
-
-            var baseInfo = new DirectoryInfo(gitRepo.Info.Path);
-            var gitName = baseInfo.Parent.Name;
+            var repository = GitRepository.Load(gitPath);
 
             // Initial Creation
-            if (!_repositories.Any(x => x.Name == gitName))
+            if (!_repositories.Any(x => x.Name == repository.Name))
             {
-                repository = new GitRepositoryStub()
-                {
-                    BaseDirectory = gitRepo.Info.WorkingDirectory,
-                    IsFork = false,
-                    IsHeadUpToDate = false,
-                    Name = gitName,
-                    LastFetch = baseInfo.LastAccessTime,
-                    LastCommitLocal = string.Format("{0}, {1}",
-                                    gitRepo.Head.Tip.Author.Name,
-                                    gitRepo.Head.Tip.Author.When.ToString("yyyy-MM-dd hh:mm:ss tt")),
-                    LastCommitRemote = string.Format("{0}, {1}",
-                                    gitRepo.Head.Tip.Author.Name,
-                                    gitRepo.Head.Tip.Author.When.ToString("yyyy-MM-dd hh:mm:ss tt")),
-                    GitUrl = gitRepo.Network.Remotes.FirstOrDefault()?.Url ?? "Not Specified",
-                    GitPath = gitRepo.Info.Path
-                };
-
                 _repositories.Add(repository);
 
                 // Repository Event (Add)
                 _eventAggregator.GetEvent<RepositoryEvent>().Publish(new RepositoryEventData()
                 {
                     EventType = RepositoryEventType.Add,
-                    RepositoryName = gitName
+                    RepositoryName = repository.Name
                 });
             }
 
             // Already Exists
             else
             {
-                repository = _repositories.First(x => x.Name == gitName);
+                var existing = _repositories.First(x => x.Name == repository.Name);
 
-                repository.LastCommitLocal = string.Format("{0}, {1}",
-                                gitRepo.Head.Tip.Author.Name,
-                                gitRepo.Head.Tip.Author.When.ToString("yyyy-MM-dd hh:mm:ss tt"));
-                repository.LastCommitRemote = string.Format("{0}, {1}",
-                                gitRepo.Head.Tip.Author.Name,
-                                gitRepo.Head.Tip.Author.When.ToString("yyyy-MM-dd hh:mm:ss tt"));
-                repository.LastFetch = baseInfo.LastAccessTime;
+                existing.LastCommitLocal = repository.LastCommitLocal;
+                existing.LastCommitRemote = repository.LastCommitRemote;
 
                 // Repository Event (Load)
                 _eventAggregator.GetEvent<RepositoryEvent>().Publish(new RepositoryEventData()
                 {
                     EventType = RepositoryEventType.Load,
-                    RepositoryName = gitName
+                    RepositoryName = repository.Name
                 });
             }
 
-            // Fetch time not stored in repository (or I haven't found it yet)
-            if (isFetch)
-                repository.LastFetch = DateTime.Now;
-
-            return _repositories.First(x => x.Name == gitName);
+            return _repositories.First(x => x.Name == repository.Name);
         }
 
         public void Dispose()

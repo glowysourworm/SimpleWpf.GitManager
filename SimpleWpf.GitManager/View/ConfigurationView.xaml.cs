@@ -66,9 +66,21 @@ namespace SimpleWpf.GitManager.View
             }
         }
 
-        private void RepoLB_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        private void RepoUpToDateLB_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            var viewModel = this.RepoLB.SelectedItem as GitManagerRepositoryViewModel;
+            var viewModel = this.RepoUpToDateLB.SelectedItem as GitManagerRepositoryViewModel;
+
+            if (viewModel != null)
+                _eventAggregator.GetEvent<ViewEvent>().Publish(new ViewEventData()
+                {
+                    RepositoryName = viewModel.Name,
+                    Type = ViewEventType.RepositoryViewRequest
+                });
+        }
+
+        private void RepoBehindLB_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            var viewModel = this.RepoBehindLB.SelectedItem as GitManagerRepositoryViewModel;
 
             if (viewModel != null)
                 _eventAggregator.GetEvent<ViewEvent>().Publish(new ViewEventData()

@@ -25,11 +25,12 @@
 
   <ItemGroup>
     <PackageReference Include="FontAwesome5" Version="2.1.11" />
-    <PackageReference Include="LibGit2Sharp" Version="0.32.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="SimpleGit" Version="1.0.0" />
     <PackageReference Include="SimpleWpf" Version="0.0.1" />
     <PackageReference Include="SimpleWpf.IocFramework" Version="0.0.1" />
     <PackageReference Include="SimpleWpf.Native" Version="0.0.1" />
+    <PackageReference Include="SimpleWpf.UI" Version="0.0.1" />
     <PackageReference Include="SimpleWpf.Utilities" Version="0.0.1" />
   </ItemGroup>
 

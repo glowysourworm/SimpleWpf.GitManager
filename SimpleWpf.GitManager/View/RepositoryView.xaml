@@ -18,10 +18,23 @@
 
                 <TextBlock Text="{Binding Name}" Grid.Column="1" Style="{StaticResource RepoListBoxItemTextBlock}" />
                 <TextBlock Text="{Binding BaseDirectory}" Grid.Column="1" Grid.Row="1" Style="{StaticResource RepoListBoxItemTextBlock}" />
-                <TextBlock Text="{Binding LastCommitLocal}" Grid.Column="1" Grid.Row="2" Style="{StaticResource RepoListBoxItemTextBlock}" />
-                <TextBlock Text="{Binding LastCommitRemote}" Grid.Column="1" Grid.Row="3" Style="{StaticResource RepoListBoxItemTextBlock}" />
-                <TextBlock Text="{Binding LastFetch, StringFormat='{}{0:yyyy-MM-dd hh:mm:ss tt}'}" Grid.Column="1" Grid.Row="4" Style="{StaticResource RepoListBoxItemTextBlock}" />
+                <TextBlock Text="{Binding LastCommitLocal, StringFormat='{}{0:yyyy-MM-dd hh:mm:ss tt}'}" Grid.Column="1" Grid.Row="2" Style="{StaticResource RepoListBoxItemTextBlock}" />
+                <TextBlock Text="{Binding LastCommitRemote, StringFormat='{}{0:yyyy-MM-dd hh:mm:ss tt}'}" Grid.Column="1" Grid.Row="3" Style="{StaticResource RepoListBoxItemTextBlock}" />
                 
+                <TextBlock Grid.Column="1" Grid.Row="4" 
+                           Style="{StaticResource RepoListBoxItemTextBlock}"
+                           Visibility="{Binding IsAhead, Converter={StaticResource BoolVisibilityCollapseConverter}}">
+                    <Run Text="Commits Ahead:  " />
+                    <Run Text="{Binding CommitDelta}" />
+                </TextBlock>
+
+                <TextBlock Grid.Column="1" Grid.Row="4" 
+                           Style="{StaticResource RepoListBoxItemTextBlock}"
+                           Visibility="{Binding IsBehind, Converter={StaticResource BoolVisibilityCollapseConverter}}">
+                    <Run Text="Commits Behind:  " />
+                    <Run Text="{Binding CommitDelta}" />
+                </TextBlock>
+
             </Grid>
         </GroupBox>
 

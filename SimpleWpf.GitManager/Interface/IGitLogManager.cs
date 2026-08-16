@@ -1,4 +1,6 @@
-﻿using SimpleWpf.GitManager.Model;
+﻿using SimpleGit;
+
+using SimpleWpf.GitManager.Model;
 
 namespace SimpleWpf.GitManager.Interface
 {
@@ -7,7 +9,7 @@ namespace SimpleWpf.GitManager.Interface
         /// <summary>
         /// Initialize the repository manager with a new configuration
         /// </summary>
-        void Initialize(IEnumerable<GitRepositoryStub> repositories);
+        void Initialize(IEnumerable<GitRepository> repositories);
 
         /// <summary>
         /// Loads git repository from local path
@@ -43,7 +45,7 @@ namespace SimpleWpf.GitManager.Interface
         /// Process for getting rid of old log files - should be run with the IGitController managing
         /// which repositories are still wanted in the configuration
         /// </summary>
-        void RemoveUnused(IEnumerable<GitRepositoryStub> repositories);
+        void RemoveUnused(IEnumerable<GitRepository> repositories);
 
         /// <summary>
         /// Logs message for a repository

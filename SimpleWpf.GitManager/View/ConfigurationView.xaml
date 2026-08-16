@@ -46,12 +46,12 @@
             <GroupBox.Header>
                 <TextBlock Style="{StaticResource LabelTextBlock}">
                     <Run Text="Git Repos (" />
-                    <Run Text="{Binding Repositories.Count, Mode=OneWay}" />
+                    <Run Text="{Binding RepositoryCount, Mode=OneWay}" />
                     <Run Text=")" />
                 </TextBlock>
             </GroupBox.Header>
 
-            <Grid RowDefinitions="Auto, *">
+            <Grid RowDefinitions="Auto, *, *">
 
                 <Border Background="#11000000" BorderBrush="LightGray" BorderThickness="1" CornerRadius="5" HorizontalAlignment="Right">
                     <StackPanel Orientation="Horizontal"
@@ -62,41 +62,70 @@
                     </StackPanel>
                 </Border>
 
-                <ScrollViewer Grid.Row="1" Padding="5" Margin="0 5 0 0" VerticalScrollBarVisibility="Auto">
+                <!-- Repositories (Up to date) -->
+                <GroupBox Grid.Row="1" 
+                          Foreground="DimGray" 
+                          FontSize="14" Margin="5" 
+                          BorderBrush="LightGray">
                     
-                    <ListBox x:Name="RepoLB"
-                             ItemsSource="{Binding Repositories}"
-                             ItemContainerStyle="{StaticResource ListBoxItemContainerStyle}"
-                             MouseDoubleClick="RepoLB_MouseDoubleClick"
-                             AlternationCount="2"
-                             SelectionMode="Extended"
-                             HorizontalAlignment="Stretch" 
-                             HorizontalContentAlignment="Stretch"
-                             BorderBrush="LightGray" 
-                             BorderThickness="1">
+                    <GroupBox.Header>
+                        <TextBlock Style="{StaticResource LabelTextBlock}">
+                            <Run Text="Up to Date (" />
+                            <Run Text="{Binding RepositoriesUpToDate.Count, Mode=OneWay}" />
+                            <Run Text=")" />
+                        </TextBlock>
+                    </GroupBox.Header>
+                    <ScrollViewer Grid.Row="1" Padding="5" Margin="0 5 0 0" VerticalScrollBarVisibility="Auto">
 
-                        <ListBox.Template>
-                            <ControlTemplate TargetType="ListBox">
-                                <Border>
-                                    <ItemsPresenter />
-                                </Border>
-                            </ControlTemplate>
-                        </ListBox.Template>
+                        <ListBox x:Name="RepoUpToDateLB"
+                                 Template="{StaticResource ListBoxControlTemplate}"
+                                 ItemsSource="{Binding RepositoriesUpToDate}"
+                                 ItemTemplate="{StaticResource ListBoxRepositoryItemTemplate}"
+                                 ItemContainerStyle="{StaticResource ListBoxItemContainerStyle}"
+                                 MouseDoubleClick="RepoUpToDateLB_MouseDoubleClick"
+                                 AlternationCount="2"
+                                 SelectionMode="Extended"
+                                 HorizontalAlignment="Stretch" 
+                                 HorizontalContentAlignment="Stretch"
+                                 BorderBrush="LightGray" 
+                                 BorderThickness="1">
+                        </ListBox>
 
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <Border HorizontalAlignment="Stretch">
-                                    <Grid ColumnDefinitions="Auto, *" HorizontalAlignment="Stretch">
-                                        <TextBlock Text="{Binding Name}" Grid.Column="0" Style="{StaticResource RepoListBoxItemLabelTextBlock}" />
-                                        <TextBlock Text="{Binding LastFetch, StringFormat='{} yyyy-MM-dd hh:mm:ss tt'}" Grid.Column="1" Style="{StaticResource RepoListBoxItemTextBlock}" />
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
+                    </ScrollViewer>
+                </GroupBox>
 
+                <!-- Repositories (Behind) -->
+                <GroupBox Grid.Row="2" 
+                          Foreground="DimGray" 
+                          FontSize="14" Margin="5" 
+                          BorderBrush="LightGray">
+                    
+                    <GroupBox.Header>
+                        <TextBlock Style="{StaticResource LabelTextBlock}">
+                            <Run Text="Out of Date (" />
+                            <Run Text="{Binding RepositoriesBehind.Count, Mode=OneWay}" />
+                            <Run Text=")" />
+                        </TextBlock>
+                    </GroupBox.Header>
+                    
+                    <ScrollViewer Padding="5" Margin="0 5 0 0" VerticalScrollBarVisibility="Auto">
 
-                    </ListBox>
-                </ScrollViewer>
+                        <ListBox x:Name="RepoBehindLB"
+                                 Template="{StaticResource ListBoxControlTemplate}"
+                                 ItemsSource="{Binding RepositoriesBehind}"
+                                 ItemTemplate="{StaticResource ListBoxRepositoryItemTemplate}"
+                                 ItemContainerStyle="{StaticResource ListBoxItemContainerStyle}"
+                                 MouseDoubleClick="RepoBehindLB_MouseDoubleClick"
+                                 AlternationCount="2"
+                                 SelectionMode="Extended"
+                                 HorizontalAlignment="Stretch" 
+                                 HorizontalContentAlignment="Stretch"
+                                 BorderBrush="LightGray" 
+                                 BorderThickness="1">
+                        </ListBox>
+
+                    </ScrollViewer>
+                </GroupBox>
             </Grid>
         </GroupBox>
 

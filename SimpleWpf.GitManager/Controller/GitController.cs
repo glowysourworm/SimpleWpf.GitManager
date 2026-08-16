@@ -3,6 +3,8 @@ using System.Windows.Threading;
 
 using Newtonsoft.Json;
 
+using SimpleGit;
+
 using SimpleWpf.Extensions.Event;
 using SimpleWpf.GitManager.Event;
 using SimpleWpf.GitManager.Interface;
@@ -77,7 +79,7 @@ namespace SimpleWpf.GitManager.Controller
             callback(_configuration);
         }
 
-        public GitRepositoryStub GetRepository(string gitName)
+        public GitRepository GetRepository(string gitName)
         {
             return _repositoryManager.Get(gitName);
         }

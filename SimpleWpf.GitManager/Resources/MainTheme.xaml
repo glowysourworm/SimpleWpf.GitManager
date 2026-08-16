@@ -5,7 +5,8 @@
                     xmlns:styleSelectors="clr-namespace:SimpleWpf.GitManager.StyleSelectors"
                     xmlns:region="clr-namespace:SimpleWpf.IocFramework.RegionManagement;assembly=SimpleWpf.IocFramework"
                     xmlns:view="clr-namespace:SimpleWpf.GitManager.View"
-                    xmlns:viewModel="clr-namespace:SimpleWpf.GitManager.ViewModel">
+                    xmlns:viewModel="clr-namespace:SimpleWpf.GitManager.ViewModel"
+                    xmlns:simpleConverter="clr-namespace:SimpleWpf.UI.Converter;assembly=SimpleWpf.UI">
 
     <!-- Theme Brushes -->
     <SolidColorBrush x:Key="LabelForeground">Gray</SolidColorBrush>
@@ -31,6 +32,10 @@
     <SolidColorBrush x:Key="RepoListBoxItemBackground2">White</SolidColorBrush>
     <SolidColorBrush x:Key="RepoListBoxItemHoverBackground">#0C33AAFF</SolidColorBrush>
     
+    <!-- Converters -->
+    <simpleConverter:BoolVisibilityCollapseConverter x:Key="BoolVisibilityCollapseConverter" />
+    <simpleConverter:BoolInverseVisibilityCollapseConverter x:Key="BoolInverseVisibilityCollapseConverter" />
+
     <!-- DataTemplate Selectors -->
     <templateSelectors:TabContentTemplateSelector x:Key="TabContentTemplateSelector" />
     <templateSelectors:TabItemTemplateSelector x:Key="TabItemTemplateSelector" />
@@ -123,6 +128,35 @@
         </Setter>
     </Style>
     
+    <!-- List Box Templates -->
+    <ControlTemplate TargetType="ListBox" x:Key="ListBoxControlTemplate">
+        <Border>
+            <ItemsPresenter />
+        </Border>
+    </ControlTemplate>
+
+    <DataTemplate x:Key="ListBoxRepositoryItemTemplate">
+        <Border HorizontalAlignment="Stretch">
+            <Grid ColumnDefinitions="Auto, Auto, *" HorizontalAlignment="Stretch">
+
+                <fa5:SvgAwesome Icon="Brands_Github" 
+                                                        Style="{StaticResource FontAwesomeIconDefault}"  
+                                                        Margin="3 3 10 3" 
+                                                        Visibility="{Binding IsFork, Converter={StaticResource BoolInverseVisibilityCollapseConverter}}"
+                                                        />
+
+                <fa5:SvgAwesome Icon="Solid_CodeBranch" 
+                                                        Style="{StaticResource FontAwesomeIconDefault}"  
+                                                        Margin="3 3 10 3" 
+                                                        Visibility="{Binding IsFork, Converter={StaticResource BoolVisibilityCollapseConverter}}"
+                                                        />
+
+                <TextBlock Text="{Binding Name}" Grid.Column="1" Style="{StaticResource RepoListBoxItemLabelTextBlock}" />
+                <TextBlock Text="{Binding LastFetch, StringFormat='{} yyyy-MM-dd hh:mm:ss tt'}" Grid.Column="2" Style="{StaticResource RepoListBoxItemTextBlock}" />
+            </Grid>
+        </Border>
+    </DataTemplate>
+
     <!-- List Box Styles -->
     <Style TargetType="ListBoxItem" x:Key="ListBoxItemContainerStyle">
         <Setter Property="BorderBrush" Value="Transparent" />

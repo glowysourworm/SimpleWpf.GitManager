@@ -9,12 +9,14 @@ namespace SimpleWpf.GitManager.ViewModel
         string _baseDirectory;
         string _gitUrl;
         string _name;
-        string _lastCommitRemote;
-        string _lastCommitLocal;
+        string _headName;
+        DateTimeOffset _lastCommitRemote;
+        DateTimeOffset _lastCommitLocal;
         bool _isFork;
-        bool _isHeadUpToDate;
+        bool _isAhead;
+        bool _isBehind;
+        int _commitDelta;
         uint _size;
-        DateTimeOffset _lastFetch;
 
         string _loadingMessage;
         bool _isLoading;
@@ -35,12 +37,17 @@ namespace SimpleWpf.GitManager.ViewModel
             get { return _gitUrl; }
             set { this.RaiseAndSetIfChanged(ref _gitUrl, value); }
         }
-        public string LastCommitRemote
+        public string HeadName
+        {
+            get { return _headName; }
+            set { this.RaiseAndSetIfChanged(ref _headName, value); }
+        }
+        public DateTimeOffset LastCommitRemote
         {
             get { return _lastCommitRemote; }
             set { this.RaiseAndSetIfChanged(ref _lastCommitRemote, value); }
         }
-        public string LastCommitLocal
+        public DateTimeOffset LastCommitLocal
         {
             get { return _lastCommitLocal; }
             set { this.RaiseAndSetIfChanged(ref _lastCommitLocal, value); }
@@ -50,20 +57,25 @@ namespace SimpleWpf.GitManager.ViewModel
             get { return _isFork; }
             set { this.RaiseAndSetIfChanged(ref _isFork, value); }
         }
-        public bool IsHeadUpToDate
+        public bool IsAhead
         {
-            get { return _isHeadUpToDate; }
-            set { this.RaiseAndSetIfChanged(ref _isHeadUpToDate, value); }
+            get { return _isAhead; }
+            set { this.RaiseAndSetIfChanged(ref _isAhead, value); }
+        }
+        public bool IsBehind
+        {
+            get { return _isBehind; }
+            set { this.RaiseAndSetIfChanged(ref _isBehind, value); }
+        }
+        public int CommitDelta
+        {
+            get { return _commitDelta; }
+            set { this.RaiseAndSetIfChanged(ref _commitDelta, value); }
         }
         public uint Size
         {
             get { return _size; }
             set { this.RaiseAndSetIfChanged(ref _size, value); }
-        }
-        public DateTimeOffset LastFetch
-        {
-            get { return _lastFetch; }
-            set { this.RaiseAndSetIfChanged(ref _lastFetch, value); }
         }
 
         public string LoadingMessage
@@ -89,12 +101,13 @@ namespace SimpleWpf.GitManager.ViewModel
             this.BaseDirectory = string.Empty;
             this.GitUrl = string.Empty;
             this.Name = string.Empty;
+            this.HeadName = string.Empty;
+            this.IsAhead = false;
+            this.IsBehind = false;
             this.IsFork = false;
-            this.IsHeadUpToDate = false;
             this.Size = 0;
-            this.LastCommitLocal = string.Empty;
-            this.LastCommitRemote = string.Empty;
-            this.LastFetch = DateTimeOffset.MinValue;
+            this.LastCommitLocal = DateTime.MinValue;
+            this.LastCommitRemote = DateTime.MinValue;
 
             this.LoadingMessage = string.Empty;
             this.IsLoading = false;
