@@ -1,4 +1,4 @@
-﻿using SimpleGit;
+﻿using SimpleGit.Model;
 
 using SimpleWpf.GitManager.Model;
 
@@ -9,36 +9,36 @@ namespace SimpleWpf.GitManager.Interface
         /// <summary>
         /// Returns a list of repository names
         /// </summary>
-        IEnumerable<string> GetList();
+        IEnumerable<GitRepositoryStub> GetList();
 
         /// <summary>
         /// Gets repository information from the manager
         /// </summary>
-        GitRepository Get(string gitName);
+        GitRepositoryStub Get(string gitName);
 
         /// <summary>
         /// Gets all repositories from the manager
         /// </summary>
-        IEnumerable<GitRepository> GetAll();
+        IEnumerable<GitRepositoryStub> GetAll();
 
         /// <summary>
         /// Initialize the repository manager with a new configuration
         /// </summary>
-        void Initialize(GitManagerConfiguration configuration);
+        Task Initialize(GitManagerConfiguration configuration);
 
         /// <summary>
-        /// Loads git repository from local path
+        /// Re-initializes from the configuration - refreshing the repository list
         /// </summary>
-        void Load(string gitPath);
+        Task ReInitialize(GitManagerConfiguration configuration);
 
         /// <summary>
-        /// Loads git repository from local path, then calls remote fetch
+        /// Calls a remote fetch for the repository
         /// </summary>
-        void Fetch(string gitName, string userName, string password, GitHandlers.GitLogHandler logHandler);
+        Task Fetch(GitRepositoryRequest request, GitHandlers.GitLogHandler logHandler);
 
         /// <summary>
-        /// Removes all git repositories from the manager
+        /// Calls a clone for the specified repository
         /// </summary>
-        void RemoveAll();
+        Task Clone(GitRepositoryRequest request, GitHandlers.GitLogHandler logHandler);
     }
 }

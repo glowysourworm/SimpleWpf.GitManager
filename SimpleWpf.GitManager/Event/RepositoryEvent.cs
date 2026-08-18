@@ -10,9 +10,9 @@ namespace SimpleWpf.GitManager.Event
         Add,
 
         /// <summary>
-        /// Repository data was loaded from disk
+        /// Repository data was updated from the IGitRepositoryManager
         /// </summary>
-        Load,
+        Update,
 
         /// <summary>
         /// Repository was removed from the IGitRepositoryManager
@@ -38,7 +38,7 @@ namespace SimpleWpf.GitManager.Event
         public RepositoryEventData()
         {
             this.RepositoryName = string.Empty;
-            this.EventType = RepositoryEventType.Load;
+            this.EventType = RepositoryEventType.Update;
         }
     }
 

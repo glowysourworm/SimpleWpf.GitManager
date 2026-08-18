@@ -1,6 +1,4 @@
-﻿using SimpleGit;
-
-using SimpleWpf.Extensions.Event;
+﻿using SimpleWpf.Extensions.Event;
 using SimpleWpf.GitManager.Model;
 
 namespace SimpleWpf.GitManager.Interface
@@ -13,14 +11,14 @@ namespace SimpleWpf.GitManager.Interface
         void GetConfiguration(SimpleEventHandler<GitManagerConfiguration> callback);
         Task SetConfiguration(SimpleEventHandler<GitManagerConfiguration> callback, bool requiresReload);
 
-        GitRepository GetRepository(string gitName);
+        GitRepositoryStub GetRepository(string gitName);
         GitRepositoryLog GetRepositoryLog(string gitName);
 
-        IEnumerable<string> GetRepositoryList();
+        IEnumerable<GitRepositoryStub> GetRepositoryList();
 
         Task OpenConfiguration(string configurationFile);
         Task SaveConfiguration();
 
-        Task Fetch(string repositoryName);
+        Task Fetch(GitRepositoryStub repository);
     }
 }

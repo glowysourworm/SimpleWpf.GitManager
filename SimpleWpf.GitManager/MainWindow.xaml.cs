@@ -2,11 +2,10 @@
 using System.Windows;
 using System.Windows.Threading;
 
-using SimpleGit;
-
 using SimpleWpf.Extensions.Collection;
 using SimpleWpf.GitManager.Event;
 using SimpleWpf.GitManager.Interface;
+using SimpleWpf.GitManager.Model;
 using SimpleWpf.GitManager.ViewModel;
 using SimpleWpf.IocFramework.Application.Attribute;
 using SimpleWpf.IocFramework.EventAggregation;
@@ -136,7 +135,7 @@ namespace SimpleWpf.GitManager
                 case RepositoryEventType.Add:
                     Repository_Add(eventData.RepositoryName);
                     break;
-                case RepositoryEventType.Load:
+                case RepositoryEventType.Update:
                     //Repository_View(eventData.RepositoryName);
                     break;
                 case RepositoryEventType.Remove:
@@ -276,19 +275,30 @@ namespace SimpleWpf.GitManager
             }
         }
 
-        private void MapRepository(GitRepository source, ref GitManagerRepositoryViewModel destination)
+        private void MapRepository(GitRepositoryStub source, ref GitManagerRepositoryViewModel destination)
         {
+            destination.AheadBy = source.AheadBy;
             destination.BaseDirectory = source.WorkingDirectory;
-            destination.CommitDelta = source.CommitDelta;
-            destination.GitUrl = source.GetHeadRemote().Url;
-            destination.HeadName = source.HeadRemoteName;
+            destination.BehindBy = source.BehindBy;
+            destination.CommitLocalMessage = source.LastCommitLocal?.Message ?? string.Empty;
+            destination.CommitLocalUser = source.LastCommitLocal?.Author ?? string.Empty;
+            destination.CommitLocalWhen = source.LastCommitLocal?.Timestamp ?? DateTime.MinValue;
+            destination.CommitRemoteMessage = source.LastCommitRemote?.Message ?? string.Empty;
+            destination.CommitRemoteUser = source.LastCommitRemote?.Author ?? string.Empty;
+            destination.CommitRemoteWhen = source.LastCommitRemote?.Timestamp ?? DateTime.MinValue;
+            destination.Id = source.Id;
             destination.IsAhead = source.IsAhead;
             destination.IsBehind = source.IsBehind;
-            destination.IsFork = source.IsFork();
+            destination.IsFork = source.IsFork;
+            destination.IsLoading = false;
+            destination.IsSelected = false;
+            destination.LoadingMessage = string.Empty;
             destination.Name = source.Name;
-            destination.LastCommitLocal = source.LastCommitLocal;
-            destination.LastCommitRemote = source.LastCommitRemote;
-            destination.Size = source.Size;
+            destination.OwnerName = source.OwnerName;
+            destination.RemoteHead = string.Empty;
+            destination.RemoteSize = source.RemoteSize;
+            destination.Url = source.Url;
+            destination.WorkingDirectory = source.WorkingDirectory;
         }
 
         private void AddRepositoryButton_Click(object sender, RoutedEventArgs e)
@@ -310,7 +320,9 @@ namespace SimpleWpf.GitManager
                 repository.IsLoading = true;
                 repository.LoadingMessage = "Performing Fetch...";
 
-                await _controller.Fetch(repository.Name);
+                var repositoryStub = _controller.GetRepository(repository.Name);
+
+                await _controller.Fetch(repositoryStub);
 
                 repository.IsLoading = false;
                 repository.LoadingMessage = string.Empty;

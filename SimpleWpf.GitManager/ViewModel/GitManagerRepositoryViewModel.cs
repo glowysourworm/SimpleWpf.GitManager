@@ -6,56 +6,109 @@ namespace SimpleWpf.GitManager.ViewModel
 {
     public class GitManagerRepositoryViewModel : ViewModelBase
     {
-        string _baseDirectory;
-        string _gitUrl;
+        long _id;
         string _name;
-        string _headName;
-        DateTimeOffset _lastCommitRemote;
-        DateTimeOffset _lastCommitLocal;
-        bool _isFork;
+        string _ownerName;
+        string _baseDirectory;
+        string _workingDirectory;
+        string _url;
+        DateTimeOffset? _commitLocalWhen;
+        DateTimeOffset? _commitRemoteWhen;
+        string _commitLocalMessage;
+        string _commitRemoteMessage;
+        string _commitLocalUser;
+        string _commitRemoteUser;
+        string _remoteHead;
+        long _remoteSize;
+        int _behindBy;
+        int _aheadBy;
         bool _isAhead;
         bool _isBehind;
-        int _commitDelta;
-        uint _size;
+        bool _isFork;
 
         string _loadingMessage;
         bool _isLoading;
         bool _isSelected;
 
+        public long Id
+        {
+            get { return _id; }
+            set { this.RaiseAndSetIfChanged(ref _id, value); }
+        }
         public string Name
         {
             get { return _name; }
             set { this.RaiseAndSetIfChanged(ref _name, value); }
+        }
+        public string OwnerName
+        {
+            get { return _ownerName; }
+            set { this.RaiseAndSetIfChanged(ref _ownerName, value); }
         }
         public string BaseDirectory
         {
             get { return _baseDirectory; }
             set { this.RaiseAndSetIfChanged(ref _baseDirectory, value); }
         }
-        public string GitUrl
+        public string WorkingDirectory
         {
-            get { return _gitUrl; }
-            set { this.RaiseAndSetIfChanged(ref _gitUrl, value); }
+            get { return _workingDirectory; }
+            set { this.RaiseAndSetIfChanged(ref _workingDirectory, value); }
         }
-        public string HeadName
+        public string Url
         {
-            get { return _headName; }
-            set { this.RaiseAndSetIfChanged(ref _headName, value); }
+            get { return _url; }
+            set { this.RaiseAndSetIfChanged(ref _url, value); }
         }
-        public DateTimeOffset LastCommitRemote
+        public DateTimeOffset? CommitLocalWhen
         {
-            get { return _lastCommitRemote; }
-            set { this.RaiseAndSetIfChanged(ref _lastCommitRemote, value); }
+            get { return _commitLocalWhen; }
+            set { this.RaiseAndSetIfChanged(ref _commitLocalWhen, value); }
         }
-        public DateTimeOffset LastCommitLocal
+        public DateTimeOffset? CommitRemoteWhen
         {
-            get { return _lastCommitLocal; }
-            set { this.RaiseAndSetIfChanged(ref _lastCommitLocal, value); }
+            get { return _commitRemoteWhen; }
+            set { this.RaiseAndSetIfChanged(ref _commitRemoteWhen, value); }
         }
-        public bool IsFork
+        public string CommitLocalMessage
         {
-            get { return _isFork; }
-            set { this.RaiseAndSetIfChanged(ref _isFork, value); }
+            get { return _commitLocalMessage; }
+            set { this.RaiseAndSetIfChanged(ref _commitLocalMessage, value); }
+        }
+        public string CommitRemoteMessage
+        {
+            get { return _commitRemoteMessage; }
+            set { this.RaiseAndSetIfChanged(ref _commitRemoteMessage, value); }
+        }
+        public string CommitLocalUser
+        {
+            get { return _commitLocalUser; }
+            set { this.RaiseAndSetIfChanged(ref _commitLocalUser, value); }
+        }
+        public string CommitRemoteUser
+        {
+            get { return _commitRemoteUser; }
+            set { this.RaiseAndSetIfChanged(ref _commitRemoteUser, value); }
+        }
+        public string RemoteHead
+        {
+            get { return _remoteHead; }
+            set { this.RaiseAndSetIfChanged(ref _remoteHead, value); }
+        }
+        public long RemoteSize
+        {
+            get { return _remoteSize; }
+            set { this.RaiseAndSetIfChanged(ref _remoteSize, value); }
+        }
+        public int BehindBy
+        {
+            get { return _behindBy; }
+            set { this.RaiseAndSetIfChanged(ref _behindBy, value); }
+        }
+        public int AheadBy
+        {
+            get { return _aheadBy; }
+            set { this.RaiseAndSetIfChanged(ref _aheadBy, value); }
         }
         public bool IsAhead
         {
@@ -67,15 +120,10 @@ namespace SimpleWpf.GitManager.ViewModel
             get { return _isBehind; }
             set { this.RaiseAndSetIfChanged(ref _isBehind, value); }
         }
-        public int CommitDelta
+        public bool IsFork
         {
-            get { return _commitDelta; }
-            set { this.RaiseAndSetIfChanged(ref _commitDelta, value); }
-        }
-        public uint Size
-        {
-            get { return _size; }
-            set { this.RaiseAndSetIfChanged(ref _size, value); }
+            get { return _isFork; }
+            set { this.RaiseAndSetIfChanged(ref _isFork, value); }
         }
 
         public string LoadingMessage
@@ -98,16 +146,25 @@ namespace SimpleWpf.GitManager.ViewModel
 
         public GitManagerRepositoryViewModel()
         {
-            this.BaseDirectory = string.Empty;
-            this.GitUrl = string.Empty;
+            this.Id = 0;
             this.Name = string.Empty;
-            this.HeadName = string.Empty;
+            this.OwnerName = string.Empty;
+            this.BaseDirectory = string.Empty;
+            this.WorkingDirectory = string.Empty;
+            this.Url = string.Empty;
+            this.CommitLocalWhen = DateTime.MinValue;
+            this.CommitRemoteWhen = DateTime.MinValue;
+            this.CommitLocalMessage = string.Empty;
+            this.CommitRemoteMessage = string.Empty;
+            this.CommitLocalUser = string.Empty;
+            this.CommitRemoteUser = string.Empty;
+            this.RemoteHead = string.Empty;
+            this.RemoteSize = 0;
+            this.BehindBy = 0;
+            this.AheadBy = 0;
             this.IsAhead = false;
             this.IsBehind = false;
             this.IsFork = false;
-            this.Size = 0;
-            this.LastCommitLocal = DateTime.MinValue;
-            this.LastCommitRemote = DateTime.MinValue;
 
             this.LoadingMessage = string.Empty;
             this.IsLoading = false;

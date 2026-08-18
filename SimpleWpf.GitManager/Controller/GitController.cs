@@ -3,7 +3,7 @@ using System.Windows.Threading;
 
 using Newtonsoft.Json;
 
-using SimpleGit;
+using SimpleGit.Model;
 
 using SimpleWpf.Extensions.Event;
 using SimpleWpf.GitManager.Event;
@@ -66,10 +66,7 @@ namespace SimpleWpf.GitManager.Controller
                 if (requiresReload)
                 {
                     // Repos -> Log (event aggregator)
-                    _repositoryManager.RemoveAll();
-
-                    // Reload -> Log (event aggregator)
-                    _repositoryManager.Initialize(_configuration);
+                    await _repositoryManager.ReInitialize(_configuration);
                 }
             });
         }
@@ -79,7 +76,7 @@ namespace SimpleWpf.GitManager.Controller
             callback(_configuration);
         }
 
-        public GitRepository GetRepository(string gitName)
+        public GitRepositoryStub GetRepository(string gitName)
         {
             return _repositoryManager.Get(gitName);
         }
@@ -87,16 +84,27 @@ namespace SimpleWpf.GitManager.Controller
         {
             return _logManager.Get(gitName);
         }
-        public IEnumerable<string> GetRepositoryList()
+        public IEnumerable<GitRepositoryStub> GetRepositoryList()
         {
             return _repositoryManager.GetList();
         }
 
-        public Task Fetch(string repositoryName)
+        public Task Fetch(GitRepositoryStub repository)
         {
             return Task.Run(async () =>
             {
-                _repositoryManager.Fetch(repositoryName, _configuration.User, _configuration.Password, logMessage =>
+                await _repositoryManager.Fetch(new GitRepositoryRequest()
+                {
+                    BaseDirectory = _configuration.Directory,
+                    Password = _configuration.Password,
+                    RepositoryId = repository.Id,
+                    RepositoryName = repository.Name,
+                    Type = GitRepositoryRequest.RequestType.Fetch,
+                    Url = repository.Url,
+                    User = _configuration.User,
+                    WorkingDirectory = repository.WorkingDirectory
+
+                }, logMessage =>
                 {
                     // Libgit2Sharp:  Log messages sometimes have several lines at once
                     //                sent back from the Git proxy
@@ -107,7 +115,7 @@ namespace SimpleWpf.GitManager.Controller
 
                         foreach (var message in logLines)
                         {
-                            _logManager.Log(repositoryName, logMessage);
+                            _logManager.Log(repository.Name, logMessage);
                         }
                     }
 
@@ -244,7 +252,7 @@ namespace SimpleWpf.GitManager.Controller
                     _logManager.RemoveAll();
                 }
                 break;
-                case RepositoryEventType.Load:
+                case RepositoryEventType.Update:
                 case RepositoryEventType.Fetch:
                     break;
                 default:

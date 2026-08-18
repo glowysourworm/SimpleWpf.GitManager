@@ -1,8 +1,6 @@
 ﻿using System.IO;
 using System.Xml.Serialization;
 
-using SimpleGit;
-
 using SimpleWpf.Extensions.Collection;
 using SimpleWpf.GitManager.Event;
 using SimpleWpf.GitManager.Interface;
@@ -32,7 +30,7 @@ namespace SimpleWpf.GitManager.Component
             _eventAggregator = eventAggregator;
         }
 
-        public void Initialize(IEnumerable<GitRepository> repositories)
+        public void Initialize(IEnumerable<GitRepositoryStub> repositories)
         {
             if (!Directory.Exists(LOG_DIRECTORY))
                 Directory.CreateDirectory(LOG_DIRECTORY);
@@ -155,7 +153,7 @@ namespace SimpleWpf.GitManager.Component
             SaveLog(repositoryName);
         }
 
-        public void RemoveUnused(IEnumerable<GitRepository> currentList)
+        public void RemoveUnused(IEnumerable<GitRepositoryStub> currentList)
         {
             // Log Directory
             var logFiles = Directory.GetFiles(LOG_DIRECTORY, "*" + LOG_EXT);

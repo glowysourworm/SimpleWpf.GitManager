@@ -1,6 +1,5 @@
-﻿using System.IO;
-
-using SimpleGit;
+﻿using SimpleGit.Component;
+using SimpleGit.Model;
 
 using SimpleWpf.GitManager.Event;
 using SimpleWpf.GitManager.Interface;
@@ -15,114 +14,167 @@ namespace SimpleWpf.GitManager.Component
     {
         private readonly IIocEventAggregator _eventAggregator;
 
-        private List<GitRepository> _repositories;
+        private List<GitRepositoryStub> _repositories;
 
         [IocImportingConstructor]
         public GitRepositoryManager(IIocEventAggregator eventAggregator)
         {
             _eventAggregator = eventAggregator;
-            _repositories = new List<GitRepository>();
+            _repositories = new List<GitRepositoryStub>();
         }
 
-        public GitRepository Get(string gitName)
+        public GitRepositoryStub Get(string gitName)
         {
             return _repositories.First(x => x.Name == gitName);
         }
 
-        public IEnumerable<GitRepository> GetAll()
+        public IEnumerable<GitRepositoryStub> GetAll()
         {
             return _repositories;
         }
 
-        public IEnumerable<string> GetList()
+        public IEnumerable<GitRepositoryStub> GetList()
         {
-            return _repositories.Select(r => r.Name).ToList();
+            return _repositories;
         }
 
-        public void Fetch(string gitName, string userName, string password, GitHandlers.GitLogHandler logHandler)
+        public Task Clone(GitRepositoryRequest request, GitHandlers.GitLogHandler logHandler)
         {
-            try
+            return Task.Run(async () =>
             {
-                var repository = _repositories.First(x => x.Name == gitName);
-
-                // Update Fetch
-                //repository.LastFetch = DateTime.Now;
-
-                var proxy = new GitProxy(repository);
-
-                // -> SimpleGit Fetch (command line terminal proxy)
-                proxy.Fetch(logHandler);
-
-                _eventAggregator.GetEvent<RepositoryEvent>().Publish(new RepositoryEventData()
+                try
                 {
-                    EventType = RepositoryEventType.Fetch,
-                    RepositoryName = gitName
-                });
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
+
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception("Error cloning git repository", ex);
+                }
+            });
         }
 
-        public void Initialize(GitManagerConfiguration configuration)
+        public Task Fetch(GitRepositoryRequest request, GitHandlers.GitLogHandler logHandler)
         {
-            try
+            return Task.Run(async () =>
             {
-                // Loaded Repositories (remove and repopulate)
-                _repositories.Clear();
-
-                // Init Repositories
-                if (!string.IsNullOrEmpty(configuration.Directory))
+                using (var proxy = new GitProxy())
                 {
-                    // Git Directories (assume)
-                    foreach (var directory in Directory.GetDirectories(configuration.Directory))
+                    try
                     {
-                        var gitPath = Path.Combine(directory, ".git");
-                        var dirInfo = new DirectoryInfo(gitPath);
-                        var gitName = Directory.GetParent(gitPath).Name;           // Git naming convention does not name repository itself
+                        // -> SimpleGit Fetch
+                        //
+                        var response = await proxy.Fetch(request, logHandler);
 
-                        if (string.IsNullOrWhiteSpace(gitName))
-                            continue;
-
-                        Load(gitPath);
+                        _eventAggregator.GetEvent<RepositoryEvent>().Publish(new RepositoryEventData()
+                        {
+                            EventType = RepositoryEventType.Fetch,
+                            RepositoryName = request.RepositoryName
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new Exception("Error fetching git repository", ex);
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
+            });
         }
 
-        public void Load(string gitPath)
+        public Task Initialize(GitManagerConfiguration configuration)
         {
-            if (Directory.Exists(gitPath))
+            return Task.Run(async () =>
             {
-                UpdateOrAdd(gitPath);
-            }
+                try
+                {
+                    // Loaded Repositories (remove and repopulate)
+                    _repositories.Clear();
+
+                    // Init Repositories
+                    if (!string.IsNullOrEmpty(configuration.Directory))
+                    {
+                        using (var proxy = new GitProxy())
+                        {
+                            var responses = await proxy.OpenMany(new GitRepositoryRequest()
+                            {
+                                BaseDirectory = configuration.Directory,
+                                Password = configuration.Password,
+                                Type = GitRepositoryRequest.RequestType.LoadAndRemoteRead,
+                                User = configuration.User
+                            });
+
+                            foreach (var response in responses)
+                            {
+                                if (!ValidateResponse(response))
+                                    throw new Exception("Invalid GitProxy response");
+
+                                var repository = new GitRepositoryStub(response);
+
+                                UpdateOrAdd(repository);
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    throw ex;
+                }
+            });
         }
 
-        public void RemoveAll()
+        public Task ReInitialize(GitManagerConfiguration configuration)
         {
             _repositories.Clear();
 
-            // Repository Event (Fetch)
+            // Repository Event (RemoveAll)
             _eventAggregator.GetEvent<RepositoryEvent>().Publish(new RepositoryEventData()
             {
                 EventType = RepositoryEventType.RemoveAll,
             });
+
+            return Initialize(configuration);
+        }
+
+        private bool ValidateResponse(GitRepositoryResponse response)
+        {
+            if (response.Local == null &&
+                response.Remote == null)
+                return false;
+
+            if (response.Local?.Id == null &&
+                response.Remote?.Id == null)
+                return false;
+
+            if (response.Local?.Name == null &&
+                response.Remote?.Name == null)
+                return false;
+
+            // Local
+            if (response.Local != null)
+            {
+                if (string.IsNullOrWhiteSpace(response.Local.WorkingDirectory))
+                    return false;
+            }
+
+            // Remote
+            if (response.Remote != null)
+            {
+                if (string.IsNullOrWhiteSpace(response.Remote.Url))
+                    return false;
+            }
+
+            // Local | Remote
+            if (response.Remote != null && response.Local != null)
+            {
+                if (response.Status == null)
+                    return false;
+            }
+
+            return true;
         }
 
         // Updates configuration and returns Libgit2Sharp repository object
-        private GitRepository UpdateOrAdd(string gitPath)
+        private void UpdateOrAdd(GitRepositoryStub repository)
         {
-            if (!Directory.Exists(gitPath))
-                throw new Exception("Git repository doesn't exist locally. Please do a clone first");
-
-            var repository = GitRepository.Load(gitPath);
-
-            // Initial Creation
+            // Add
             if (!_repositories.Any(x => x.Name == repository.Name))
             {
                 _repositories.Add(repository);
@@ -135,23 +187,21 @@ namespace SimpleWpf.GitManager.Component
                 });
             }
 
-            // Already Exists
+            // Update
             else
             {
                 var existing = _repositories.First(x => x.Name == repository.Name);
 
-                existing.LastCommitLocal = repository.LastCommitLocal;
-                existing.LastCommitRemote = repository.LastCommitRemote;
+                // Update
+                existing.Update(repository);
 
                 // Repository Event (Load)
                 _eventAggregator.GetEvent<RepositoryEvent>().Publish(new RepositoryEventData()
                 {
-                    EventType = RepositoryEventType.Load,
+                    EventType = RepositoryEventType.Update,
                     RepositoryName = repository.Name
                 });
             }
-
-            return _repositories.First(x => x.Name == repository.Name);
         }
 
         public void Dispose()
