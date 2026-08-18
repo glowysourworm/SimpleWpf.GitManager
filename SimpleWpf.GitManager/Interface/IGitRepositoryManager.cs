@@ -34,11 +34,11 @@ namespace SimpleWpf.GitManager.Interface
         /// <summary>
         /// Calls a remote fetch for the repository
         /// </summary>
-        Task Fetch(GitRepositoryRequest request, GitHandlers.GitLogHandler logHandler);
+        Task Fetch(GitManagerConfiguration configuration, GitRepositoryStub repository, GitHandlers.GitLogHandler logHandler);
 
         /// <summary>
         /// Calls a clone for the specified repository
         /// </summary>
-        Task Clone(GitRepositoryRequest request, GitHandlers.GitLogHandler logHandler);
+        Task Clone(GitManagerConfiguration configuration, GitRepositoryStub repository, GitHandlers.GitLogHandler logHandler);
     }
 }

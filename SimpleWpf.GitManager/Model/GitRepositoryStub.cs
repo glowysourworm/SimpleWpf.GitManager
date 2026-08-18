@@ -4,7 +4,6 @@ namespace SimpleWpf.GitManager.Model
 {
     public class GitRepositoryStub
     {
-        public long Id { get; private set; }
         public string Name { get; private set; }
         public string OwnerName { get; private set; }
         public string BaseDirectory { get; private set; }
@@ -34,17 +33,12 @@ namespace SimpleWpf.GitManager.Model
         /// </summary>
         public bool IsLocalClone { get; set; }
 
-        public void SetFromResponse(GitRepositoryResponse response)
+        public void SetFromResponse(GitResponseData response)
         {
-            if (response.Local?.Id == null &&
-                response.Remote?.Id == null)
-                throw new ArgumentException("Invalid git repository response:  must have valid id");
-
-            if (response.Local?.Name == null &&
-                response.Remote?.Name == null)
+            if (string.IsNullOrWhiteSpace(response.Local?.Name) &&
+                string.IsNullOrWhiteSpace(response.Remote?.Name))
                 throw new ArgumentException("Invalid git repository response:  must have valid name");
 
-            this.Id = response.Local?.Id ?? response.Remote?.Id ?? 0;
             this.Name = response.Local?.Name ?? response.Remote?.Name ?? string.Empty;
 
             // Local
@@ -90,9 +84,6 @@ namespace SimpleWpf.GitManager.Model
 
         public bool Validate(GitRepositoryStub repository)
         {
-            if (this.Id <= 0)
-                return false;
-
             if (string.IsNullOrWhiteSpace(repository.Name))
                 return false;
 
@@ -119,7 +110,6 @@ namespace SimpleWpf.GitManager.Model
             if (!Validate(repository))
                 throw new Exception("Invalid GitRepositoryStub");
 
-            this.Id = repository.Id;
             this.Name = repository.Name;
             this.BaseDirectory = repository.BaseDirectory;
             this.WorkingDirectory = repository.WorkingDirectory;
@@ -136,9 +126,8 @@ namespace SimpleWpf.GitManager.Model
             this.IsFork = repository.IsFork;
         }
 
-        public GitRepositoryStub(long id, string name, string baseDirectory, string workingDirectory, string url)
+        public GitRepositoryStub(string name, string baseDirectory, string workingDirectory, string url)
         {
-            this.Id = id;
             this.Name = name;
             this.BaseDirectory = baseDirectory;
             this.WorkingDirectory = workingDirectory;
@@ -155,7 +144,7 @@ namespace SimpleWpf.GitManager.Model
             this.IsFork = false;
         }
 
-        public GitRepositoryStub(GitRepositoryResponse response)
+        public GitRepositoryStub(GitResponseData response)
         {
             SetFromResponse(response);
         }

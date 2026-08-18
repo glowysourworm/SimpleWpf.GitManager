@@ -13,5 +13,22 @@
         {
 
         }
+
+        public bool Validate()
+        {
+            if (string.IsNullOrWhiteSpace(this.Directory))
+                return false;
+
+            if (string.IsNullOrWhiteSpace(this.User))
+                return false;
+
+            if (string.IsNullOrWhiteSpace(this.Password))
+                return false;
+
+            if (!System.IO.Directory.Exists(this.Directory))
+                return false;
+
+            return true;
+        }
     }
 }

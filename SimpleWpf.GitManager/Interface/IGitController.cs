@@ -5,10 +5,12 @@ namespace SimpleWpf.GitManager.Interface
 {
     public interface IGitController : IDisposable
     {
+        Task Initialize();
+
         string GetConfigurationFile();
         string GetConfigurationFullPath();
 
-        void GetConfiguration(SimpleEventHandler<GitManagerConfiguration> callback);
+        GitManagerConfiguration GetConfiguration();
         Task SetConfiguration(SimpleEventHandler<GitManagerConfiguration> callback, bool requiresReload);
 
         GitRepositoryStub GetRepository(string gitName);
@@ -20,5 +22,6 @@ namespace SimpleWpf.GitManager.Interface
         Task SaveConfiguration();
 
         Task Fetch(GitRepositoryStub repository);
+        Task Clone(GitRepositoryStub repository);
     }
 }

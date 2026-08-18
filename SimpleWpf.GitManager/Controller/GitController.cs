@@ -3,8 +3,6 @@ using System.Windows.Threading;
 
 using Newtonsoft.Json;
 
-using SimpleGit.Model;
-
 using SimpleWpf.Extensions.Event;
 using SimpleWpf.GitManager.Event;
 using SimpleWpf.GitManager.Interface;
@@ -71,11 +69,6 @@ namespace SimpleWpf.GitManager.Controller
             });
         }
 
-        public void GetConfiguration(SimpleEventHandler<GitManagerConfiguration> callback)
-        {
-            callback(_configuration);
-        }
-
         public GitRepositoryStub GetRepository(string gitName)
         {
             return _repositoryManager.Get(gitName);
@@ -89,22 +82,24 @@ namespace SimpleWpf.GitManager.Controller
             return _repositoryManager.GetList();
         }
 
-        public Task Fetch(GitRepositoryStub repository)
+        public Task Initialize()
+        {
+            if (!_configuration.Validate())
+                throw new Exception("Configuration not valid");
+
+            return _repositoryManager.Initialize(_configuration);
+        }
+
+        public GitManagerConfiguration GetConfiguration()
+        {
+            return _configuration;
+        }
+
+        public Task Clone(GitRepositoryStub repository)
         {
             return Task.Run(async () =>
             {
-                await _repositoryManager.Fetch(new GitRepositoryRequest()
-                {
-                    BaseDirectory = _configuration.Directory,
-                    Password = _configuration.Password,
-                    RepositoryId = repository.Id,
-                    RepositoryName = repository.Name,
-                    Type = GitRepositoryRequest.RequestType.Fetch,
-                    Url = repository.Url,
-                    User = _configuration.User,
-                    WorkingDirectory = repository.WorkingDirectory
-
-                }, logMessage =>
+                await _repositoryManager.Clone(_configuration, repository, logMessage =>
                 {
                     // Libgit2Sharp:  Log messages sometimes have several lines at once
                     //                sent back from the Git proxy
@@ -124,6 +119,32 @@ namespace SimpleWpf.GitManager.Controller
                 });
             });
         }
+
+        public Task Fetch(GitRepositoryStub repository)
+        {
+            return Task.Run(async () =>
+            {
+                await _repositoryManager.Fetch(_configuration, repository, logMessage =>
+                {
+                    // Libgit2Sharp:  Log messages sometimes have several lines at once
+                    //                sent back from the Git proxy
+
+                    if (!string.IsNullOrWhiteSpace(logMessage))
+                    {
+                        var logLines = logMessage.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+                        foreach (var message in logLines)
+                        {
+                            _logManager.Log(repository.Name, logMessage);
+                        }
+                    }
+
+                    // Git cancel option (true for continue)
+                    return true;
+                });
+            });
+        }
+
         public Task OpenConfiguration(string configurationFile)
         {
             return Task.Run(async () =>
@@ -139,28 +160,33 @@ namespace SimpleWpf.GitManager.Controller
                     if (!File.Exists(_configurationFile))
                     {
                         File.Create(_configurationFile);
-                        LoadConfiguration(new GitManagerConfiguration());
-                        return;
+
+                        _configuration = new GitManagerConfiguration();
                     }
-
-                    var serializer = new JsonSerializer()
+                    else
                     {
-                        Formatting = Formatting.Indented,
-                    };
-
-                    using (var stream = File.OpenRead(_configurationFile))
-                    {
-                        using (var streamReader = new StreamReader(stream))
+                        var serializer = new JsonSerializer()
                         {
-                            using (var reader = new JsonTextReader(streamReader))
-                            {
-                                var configuration = serializer.Deserialize<GitManagerConfiguration>(reader);
+                            Formatting = Formatting.Indented,
+                        };
 
-                                // File (or) Default
-                                LoadConfiguration(configuration ?? new GitManagerConfiguration());
+                        using (var stream = File.OpenRead(_configurationFile))
+                        {
+                            using (var streamReader = new StreamReader(stream))
+                            {
+                                using (var reader = new JsonTextReader(streamReader))
+                                {
+                                    var configuration = serializer.Deserialize<GitManagerConfiguration>(reader);
+
+                                    // File (or) Default
+                                    _configuration = configuration ?? new GitManagerConfiguration();
+                                }
                             }
                         }
                     }
+
+                    // -> Configuration Event
+                    _eventAggregator.GetEvent<ConfigurationEvent>().Publish(ConfigurationEventType.Loaded);
                 }
                 catch (Exception ex)
                 {
@@ -205,24 +231,6 @@ namespace SimpleWpf.GitManager.Controller
                     throw ex;
                 }
             });
-        }
-
-        private void LoadConfiguration(GitManagerConfiguration configuration)
-        {
-            try
-            {
-                _configuration = configuration;
-
-                // -> Initialize IGitRepositoryManager -> Logs (event aggregator)
-                _repositoryManager.Initialize(_configuration);
-
-                // -> Configuration Event
-                _eventAggregator.GetEvent<ConfigurationEvent>().Publish(ConfigurationEventType.Loaded);
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
         }
 
         private void OnRepositoryEvent(RepositoryEventData data)

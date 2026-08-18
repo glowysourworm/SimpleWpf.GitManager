@@ -1,0 +1,7 @@
+﻿<UserControl x:Class="SimpleWpf.GitManager.View.LoadingView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid RowDefinitions="Auto, *, Auto" Margin="50, 20">
+        <TextBlock Text="{Binding ProgressMessage}" Style="{StaticResource DialogTextBlock}" HorizontalAlignment="Center" />
+    </Grid>
+</UserControl>

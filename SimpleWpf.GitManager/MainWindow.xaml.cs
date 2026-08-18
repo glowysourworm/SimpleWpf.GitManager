@@ -73,6 +73,11 @@ namespace SimpleWpf.GitManager
                 BasicHelpers.InvokeDispatcher(OnRepositoryEvent, DispatcherPriority.Background, data);
             });
 
+            eventAggregator.GetEvent<DialogEvent>().Subscribe(data =>
+            {
+                BasicHelpers.InvokeDispatcher(OnDialogEvent, DispatcherPriority.Background, data);
+            });
+
             this.DataContext = _viewModel;
         }
 
@@ -152,6 +157,13 @@ namespace SimpleWpf.GitManager
             }
         }
 
+        private void OnDialogEvent(DialogEventData data)
+        {
+            var viewModel = data.DataContext as GitManagerLoadingViewModel;
+
+            _viewModel.Loading = data.DataContext == null ? false : viewModel.Loading;
+        }
+
         private void Repository_Add(string repositoryName)
         {
             var hasRepository = _viewModel.HasRepository(repositoryName);
@@ -228,12 +240,11 @@ namespace SimpleWpf.GitManager
 
         private void FromConfiguration()
         {
-            _controller.GetConfiguration(configuration =>
-            {
-                _viewModel.Directory = configuration.Directory;
-                _viewModel.User = configuration.User;
-                _viewModel.Password = configuration.Password;
-            });
+            var configuration = _controller.GetConfiguration();
+
+            _viewModel.Directory = configuration.Directory;
+            _viewModel.User = configuration.User;
+            _viewModel.Password = configuration.Password;
 
             // Event already sent from initialization
             this.StatusTB.Text = "Configuration Loaded:  " + _controller.GetConfigurationFile();
@@ -250,7 +261,6 @@ namespace SimpleWpf.GitManager
             }, reload);
         }
 
-
         protected override void OnClosing(CancelEventArgs e)
         {
             base.OnClosing(e);
@@ -258,7 +268,7 @@ namespace SimpleWpf.GitManager
             // TODO:  Create Bootstrapper Logic
             try
             {
-                ToConfiguration(false);
+                _controller.SaveConfiguration();
 
                 _controller.Dispose();
             }
@@ -286,7 +296,6 @@ namespace SimpleWpf.GitManager
             destination.CommitRemoteMessage = source.LastCommitRemote?.Message ?? string.Empty;
             destination.CommitRemoteUser = source.LastCommitRemote?.Author ?? string.Empty;
             destination.CommitRemoteWhen = source.LastCommitRemote?.Timestamp ?? DateTime.MinValue;
-            destination.Id = source.Id;
             destination.IsAhead = source.IsAhead;
             destination.IsBehind = source.IsBehind;
             destination.IsFork = source.IsFork;

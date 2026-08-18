@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:fa5="clr-namespace:FontAwesome5;assembly=FontAwesome5.Net"
         xmlns:view="clr-namespace:SimpleWpf.GitManager.View"
+        IsEnabled="{Binding Loading, Converter={StaticResource BoolInverseConverter}}"
         Title="Simple Git Manager" MinHeight="400" MinWidth="600" Icon="/Resources/Images/git.bmp">
 
     <Grid RowDefinitions="Auto, *, Auto">

@@ -10,6 +10,7 @@ namespace SimpleWpf.GitManager.Event
     {
         // Dismiss (overlaps other dismiss function)
         None,
+        Loading,
         Log,
         AddRepository
     }
@@ -74,6 +75,10 @@ namespace SimpleWpf.GitManager.Event
 
         public DialogEventData(bool showDialog = false)
             : this(showDialog, false, string.Empty, DialogDefaultWidth, DialogDefaultHeight, MessageBoxButton.OK, DialogView.Log, null)
+        { }
+
+        public DialogEventData(string dialogTitle, GitManagerLoadingViewModel viewModel)
+            : this(true, false, dialogTitle, DialogDefaultWidth, DialogDefaultHeight, MessageBoxButton.OK, DialogView.Loading, viewModel)
         { }
 
         public DialogEventData(string dialogTitle, GitManagerLogViewModel viewModel)

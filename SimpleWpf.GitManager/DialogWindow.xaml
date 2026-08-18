@@ -26,12 +26,12 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <StackPanel Orientation="Horizontal" x:Name="HeaderContainer" HorizontalAlignment="Left">
-                <Image Height="20" Width="20" Stretch="Uniform" Source="/Resources/Images/icon.bmp" Margin="5 5 0 5" />
-                <TextBlock x:Name="TitleTB" FontSize="14" Foreground="#FF555555" Margin="5" HorizontalAlignment="Center" />
-            </StackPanel>
+            <!-- Title -->
+            <Border x:Name="HeaderContainer" HorizontalAlignment="Stretch">
+                <TextBlock x:Name="TitleTB" Style="{StaticResource DialogHeaderTextBlock}" Margin="5" HorizontalAlignment="Center" />
+            </Border>
 
-
+            <!-- Content View -->
             <ContentPresenter Content="{Binding}" Grid.Row="1" />
 
             <StackPanel x:Name="ButtonPanel"

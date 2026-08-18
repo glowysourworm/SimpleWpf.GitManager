@@ -15,6 +15,8 @@ namespace SimpleWpf.GitManager.ViewModel
         ObservableCollection<GitManagerRepositoryViewModel> _repositoriesBehind;
         ObservableCollection<TabViewModel> _tabs;
 
+        bool _loading;
+
         public string Directory
         {
             get { return _directory; }
@@ -49,6 +51,12 @@ namespace SimpleWpf.GitManager.ViewModel
         {
             get { return _tabs; }
             set { this.RaiseAndSetIfChanged(ref _tabs, value); }
+        }
+
+        public bool Loading
+        {
+            get { return _loading; }
+            set { this.RaiseAndSetIfChanged(ref _loading, value); }
         }
 
         public bool HasRepository(string name)
@@ -134,6 +142,8 @@ namespace SimpleWpf.GitManager.ViewModel
             this.RepositoriesUpToDate = new ObservableCollection<GitManagerRepositoryViewModel>();
             this.RepositoriesBehind = new ObservableCollection<GitManagerRepositoryViewModel>();
             this.Tabs = new ObservableCollection<TabViewModel>();
+
+            this.Loading = false;
         }
 
         private void Repository_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)

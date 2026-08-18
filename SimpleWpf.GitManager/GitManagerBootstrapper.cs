@@ -1,7 +1,4 @@
-﻿using System.Windows;
-
-using SimpleWpf.GitManager.Interface;
-using SimpleWpf.IocFramework.Application;
+﻿using SimpleWpf.IocFramework.Application;
 
 namespace SimpleWpf.GitManager
 {
@@ -16,45 +13,8 @@ namespace SimpleWpf.GitManager
     /// </summary>
     class GitManagerBootstrapper : IocWindowBootstrapper
     {
-        static string DEFAULT_CONFIGURATION = "GitManager.json";
-
-        public GitManagerBootstrapper() : base(false)
+        public GitManagerBootstrapper() : base(true, false)
         {
-
-        }
-
-        protected override async void UserPreModuleInitialize()
-        {
-            // Window Management:  The shell window must be defined as the main window before
-            //                     opening another window (here, the dialog). So, perhaps it 
-            //                     would be best to introduce a window management system to the
-            //                     IOC framework. 
-            //
-            // This will only call initialize on the module(s). Any other pieces will wait
-            // on their injector until they're called from the container. So, the main view
-            // model will wait (for the configuration) until it's used by the MainWindow.
-            //
-            base.UserPreModuleInitialize();
-
-            // Initialize configuration before proceeding
-            //
-            // We can inject our initialize procedure(s) here
-            //
-            var controller = IocContainer.Get<IGitController>();
-
-            // Get config file from the command line (or default to config folder as current executable directory)
-            var configurationFile = Environment.GetCommandLineArgs().Length > 1 ? Environment.GetCommandLineArgs()[1] : DEFAULT_CONFIGURATION;
-
-            // Read / Create Configuration
-            try
-            {
-                await controller.OpenConfiguration(configurationFile);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Configuration Error (default GitManager.json)", ex.Message);
-            }
-
 
         }
 

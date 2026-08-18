@@ -38,22 +38,42 @@ namespace SimpleWpf.GitManager.Component
             return _repositories;
         }
 
-        public Task Clone(GitRepositoryRequest request, GitHandlers.GitLogHandler logHandler)
+        public Task Clone(GitManagerConfiguration configuration, GitRepositoryStub repository, GitHandlers.GitLogHandler logHandler)
         {
             return Task.Run(async () =>
             {
-                try
+                using (var proxy = new GitProxy())
                 {
+                    try
+                    {
+                        // -> SimpleGit Clone
+                        //
+                        var response = await proxy.Process(new GitRepositoryRequest()
+                        {
+                            BaseDirectory = repository.BaseDirectory,
+                            LogHandler = logHandler,
+                            User = configuration.User,
+                            Password = configuration.Password,
+                            RepositoryName = repository.Name,
+                            Type = GitRepositoryRequest.RequestType.Clone,
+                            Url = repository.Url
+                        });
 
-                }
-                catch (Exception ex)
-                {
-                    throw new Exception("Error cloning git repository", ex);
+                        _eventAggregator.GetEvent<RepositoryEvent>().Publish(new RepositoryEventData()
+                        {
+                            EventType = RepositoryEventType.Clone,
+                            RepositoryName = repository.Name
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new Exception("Error cloning git repository", ex);
+                    }
                 }
             });
         }
 
-        public Task Fetch(GitRepositoryRequest request, GitHandlers.GitLogHandler logHandler)
+        public Task Fetch(GitManagerConfiguration configuration, GitRepositoryStub repository, GitHandlers.GitLogHandler logHandler)
         {
             return Task.Run(async () =>
             {
@@ -63,12 +83,22 @@ namespace SimpleWpf.GitManager.Component
                     {
                         // -> SimpleGit Fetch
                         //
-                        var response = await proxy.Fetch(request, logHandler);
+                        var response = await proxy.Process(new GitRepositoryRequest()
+                        {
+                            BaseDirectory = repository.BaseDirectory,
+                            WorkingDirectory = repository.WorkingDirectory,
+                            LogHandler = logHandler,
+                            User = configuration.User,
+                            Password = configuration.Password,
+                            RepositoryName = repository.Name,
+                            Type = GitRepositoryRequest.RequestType.Clone,
+                            Url = repository.Url
+                        });
 
                         _eventAggregator.GetEvent<RepositoryEvent>().Publish(new RepositoryEventData()
                         {
                             EventType = RepositoryEventType.Fetch,
-                            RepositoryName = request.RepositoryName
+                            RepositoryName = repository.Name
                         });
                     }
                     catch (Exception ex)
@@ -93,20 +123,21 @@ namespace SimpleWpf.GitManager.Component
                     {
                         using (var proxy = new GitProxy())
                         {
-                            var responses = await proxy.OpenMany(new GitRepositoryRequest()
+                            var response = await proxy.Process(new GitRepositoryRequest()
                             {
                                 BaseDirectory = configuration.Directory,
                                 Password = configuration.Password,
-                                Type = GitRepositoryRequest.RequestType.LoadAndRemoteRead,
-                                User = configuration.User
+                                User = configuration.User,
+                                Type = GitRepositoryRequest.RequestType.LocalReadAll,
+                                LogHandler = (message) => { return true; }
                             });
 
-                            foreach (var response in responses)
+                            foreach (var data in response.MultipleResponseData)
                             {
-                                if (!ValidateResponse(response))
+                                if (!ValidateResponseData(data))
                                     throw new Exception("Invalid GitProxy response");
 
-                                var repository = new GitRepositoryStub(response);
+                                var repository = new GitRepositoryStub(data);
 
                                 UpdateOrAdd(repository);
                             }
@@ -133,38 +164,34 @@ namespace SimpleWpf.GitManager.Component
             return Initialize(configuration);
         }
 
-        private bool ValidateResponse(GitRepositoryResponse response)
+        private bool ValidateResponseData(GitResponseData data)
         {
-            if (response.Local == null &&
-                response.Remote == null)
+            if (data.Local == null &&
+                data.Remote == null)
                 return false;
 
-            if (response.Local?.Id == null &&
-                response.Remote?.Id == null)
-                return false;
-
-            if (response.Local?.Name == null &&
-                response.Remote?.Name == null)
+            if (data.Local?.Name == null &&
+                data.Remote?.Name == null)
                 return false;
 
             // Local
-            if (response.Local != null)
+            if (data.Local != null)
             {
-                if (string.IsNullOrWhiteSpace(response.Local.WorkingDirectory))
+                if (string.IsNullOrWhiteSpace(data.Local.WorkingDirectory))
                     return false;
             }
 
             // Remote
-            if (response.Remote != null)
+            if (data.Remote != null)
             {
-                if (string.IsNullOrWhiteSpace(response.Remote.Url))
+                if (string.IsNullOrWhiteSpace(data.Remote.Url))
                     return false;
             }
 
             // Local | Remote
-            if (response.Remote != null && response.Local != null)
+            if (data.Remote != null && data.Local != null)
             {
-                if (response.Status == null)
+                if (data.Status == null)
                     return false;
             }
 

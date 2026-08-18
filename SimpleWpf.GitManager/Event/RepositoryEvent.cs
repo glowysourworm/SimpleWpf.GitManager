@@ -27,7 +27,12 @@ namespace SimpleWpf.GitManager.Event
         /// <summary>
         /// Repository was fetched from remote (origin or master)
         /// </summary>
-        Fetch
+        Fetch,
+
+        /// <summary>
+        /// Repository was cloned from remote (origin or master)
+        /// </summary>
+        Clone
     }
 
     public class RepositoryEventData

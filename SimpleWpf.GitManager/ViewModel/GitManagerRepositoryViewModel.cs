@@ -6,7 +6,6 @@ namespace SimpleWpf.GitManager.ViewModel
 {
     public class GitManagerRepositoryViewModel : ViewModelBase
     {
-        long _id;
         string _name;
         string _ownerName;
         string _baseDirectory;
@@ -30,11 +29,6 @@ namespace SimpleWpf.GitManager.ViewModel
         bool _isLoading;
         bool _isSelected;
 
-        public long Id
-        {
-            get { return _id; }
-            set { this.RaiseAndSetIfChanged(ref _id, value); }
-        }
         public string Name
         {
             get { return _name; }
@@ -146,7 +140,6 @@ namespace SimpleWpf.GitManager.ViewModel
 
         public GitManagerRepositoryViewModel()
         {
-            this.Id = 0;
             this.Name = string.Empty;
             this.OwnerName = string.Empty;
             this.BaseDirectory = string.Empty;

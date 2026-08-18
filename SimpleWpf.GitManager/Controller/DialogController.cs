@@ -104,6 +104,12 @@ namespace SimpleWpf.GitManager.Controller
                         DataContext = data.DataContext
                     };
                     break;
+                case DialogView.Loading:
+                    _dialogWindow.DataContext = new LoadingView()
+                    {
+                        DataContext = data.DataContext
+                    };
+                    break;
                 default:
                     throw new Exception("Unhandled dialog view type:  DialogController.cs");
             }
