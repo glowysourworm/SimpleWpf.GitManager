@@ -123,12 +123,13 @@ namespace SimpleWpf.GitManager.Component
                     {
                         using (var proxy = new GitProxy())
                         {
+                            // Local Read All
                             var response = await proxy.Process(new GitRepositoryRequest()
                             {
                                 BaseDirectory = configuration.Directory,
                                 Password = configuration.Password,
                                 User = configuration.User,
-                                Type = GitRepositoryRequest.RequestType.LocalReadAll,
+                                Type = GitRepositoryRequest.RequestType.Initialize,
                                 LogHandler = (message) => { return true; }
                             });
 
